@@ -40,11 +40,15 @@ public final class ScriptContext: Sendable {
     /// Whether to also write a combined STEP file on emit (default: true).
     public let exportSTEP: Bool
 
-    public init(exportSTEP: Bool = true) {
+    /// Part/project metadata written into the manifest.
+    public let metadata: ManifestMetadata?
+
+    public init(exportSTEP: Bool = true, metadata: ManifestMetadata? = nil) {
         let home = FileManager.default.homeDirectoryForCurrentUser
         let dir = home.appendingPathComponent(".occtswift-scripts/output")
         self.outputDir = dir
         self.exportSTEP = exportSTEP
+        self.metadata = metadata
         self.descriptors = LockedArray()
         self.shapes = LockedArray()
 
@@ -154,7 +158,8 @@ public final class ScriptContext: Sendable {
         // Write manifest last (trigger file for watcher)
         let manifest = ScriptManifest(
             description: description,
-            bodies: descriptors.all
+            bodies: descriptors.all,
+            metadata: metadata
         )
 
         let encoder = JSONEncoder()
