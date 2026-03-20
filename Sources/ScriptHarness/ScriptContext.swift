@@ -45,7 +45,19 @@ public final class ScriptContext: Sendable {
 
     public init(exportSTEP: Bool = true, metadata: ManifestMetadata? = nil) {
         let home = FileManager.default.homeDirectoryForCurrentUser
-        let dir = home.appendingPathComponent(".occtswift-scripts/output")
+
+        // Prefer iCloud Drive for cross-device sync (Mac → iPhone)
+        let iCloudDir = home
+            .appendingPathComponent("Library/Mobile Documents/com~apple~CloudDocs")
+            .appendingPathComponent("OCCTSwiftScripts/output")
+        let localDir = home.appendingPathComponent(".occtswift-scripts/output")
+
+        let dir: URL
+        if FileManager.default.fileExists(atPath: iCloudDir.deletingLastPathComponent().deletingLastPathComponent().path) {
+            dir = iCloudDir
+        } else {
+            dir = localDir
+        }
         self.outputDir = dir
         self.exportSTEP = exportSTEP
         self.metadata = metadata
