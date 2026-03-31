@@ -6,8 +6,14 @@ let package = Package(
     platforms: [
         .macOS(.v15)
     ],
+    products: [
+        .library(
+            name: "ScriptHarness",
+            targets: ["ScriptHarness"]
+        ),
+    ],
     dependencies: [
-        .package(path: "../OCCTSwift"),
+        .package(url: "https://github.com/gsdali/OCCTSwift.git", from: "0.107.3"),
     ],
     targets: [
         .target(
