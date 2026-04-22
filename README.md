@@ -32,7 +32,8 @@ graph-ml part.brep --uv-samples 16 --edge-samples 32 > part.json
 feature-recognize bracket.brep
 dxf-export bracket.brep bracket.dxf --view 0,0,1
 echo '{"points":[...],"constraints":[...]}' | solve-sketch
-echo '{"shape":"part.brep","output":"sheet.dxf","sheet":{"size":"A3","orientation":"landscape","projection":"third","scale":"auto"},"title":{"title":"Part"},"views":[{"name":"front"},{"name":"top"},{"name":"right"}]}' | drawing-export
+echo '{"shape":"part.brep","output":"sheet.dxf","sheet":{"size":"a3","orientation":"landscape","projection":"third","scale":"auto"},"title":{"title":"Part"},"views":[{"name":"front"},{"name":"top"},{"name":"right"}]}' | drawing-export
+echo '{"outputDir":"/tmp/out","outputName":"shaft","features":[{"kind":"revolve","id":"shaft","profile_points_2d":[[0,0],[10,0],[10,40],[0,40]],"axis_origin":[0,0,0],"axis_direction":[0,0,1],"angle_deg":360}]}' | reconstruct
 occtkit run my_script.swift --format brep,graph-sqlite
 
 # service mode: read JSONL `{"args":[...]}` requests on stdin, get one JSONL
@@ -45,9 +46,11 @@ printf '{"args":["a.brep"]}\n{"args":["b.brep"]}\n' | occtkit graph-validate --s
 make uninstall
 ```
 
-Subcommands: `run`, `graph-validate`, `graph-compact`, `graph-dedup`, `graph-query`, `graph-ml`, `feature-recognize`, `solve-sketch`, `dxf-export`, `drawing-export`. `occtkit --help` lists them with one-line summaries.
+Subcommands: `run`, `graph-validate`, `graph-compact`, `graph-dedup`, `graph-query`, `graph-ml`, `feature-recognize`, `solve-sketch`, `dxf-export`, `drawing-export`, `reconstruct`. `occtkit --help` lists them with one-line summaries.
 
-**`drawing-export`** produces a complete ISO 128-30 multi-view technical drawing as DXF R12: ISO 5457 sheet border + centring marks, ISO 7200 title block, ISO 5456-2 projection symbol (first or third angle), HLR-projected orthographic views, section views (3D shape cut by an arbitrary plane and projected into the plane's 2D frame), cutting-plane lines + section labels (e.g. "SECTION A-A"), auto-centerlines for revolution axes, and user-specified centermarks + dimensions. Reads a JSON spec on stdin or from an argv path. See `Sources/occtkit/Drawing/Spec.swift` for the schema; see OCCTSwift#73-#76 for upstream gaps that the verb currently DIYs.
+**`drawing-export`** produces a complete ISO 128-30 multi-view technical drawing as DXF R12: ISO 5457 sheet border + centring marks, ISO 7200 title block (with material / weight / revision / sheet number / etc.), ISO 5456-2 first/third-angle projection symbol, HLR orthographic views, section views (auto-hatched per ISO 128-50), cutting-plane lines + labels (ISO 128-40), auto-centerlines (revolution axes) + auto-centermarks (circular features), ISO 6410 cosmetic threads, ISO 1302 surface-finish symbols, ISO 1101 GD&T feature-control frames, detail views, and user-specified linear/radial/diameter/angular dimensions. ISO 5455 standard scales auto-snap. Reads a JSON spec on stdin or from an argv path. See `Sources/occtkit/Drawing/Spec.swift` for the full schema. Implementation orchestrates OCCTSwift v0.147+ primitives — see CLAUDE.md for the exact API set.
+
+**`reconstruct`** builds a BREP from a JSON `[FeatureSpec]` payload via OCCTSwift's `FeatureReconstructor`. Request schema `{outputDir, outputName?, features:[…]}` where each feature has `kind` (`revolve`/`extrude`/`hole`/`thread`/`fillet`/`chamfer`) and snake_case fields. Closes #3.
 
 For `occtkit run`: by default the cached SPM workspace under `~/.occtswift-scripts/runner-cache/workspace/` references this package via a path dep auto-detected from the running binary; override with `OCCTKIT_SCRIPTS_PATH=/path/to/OCCTSwiftScripts` or fall back to the published remote tag.
 

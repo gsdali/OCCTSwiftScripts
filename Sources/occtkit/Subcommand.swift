@@ -23,6 +23,7 @@ enum Registry {
         SolveSketchCommand.self,
         DXFExportCommand.self,
         DrawingExportCommand.self,
+        ReconstructCommand.self,
     ]
 
     /// Verb names registered in `all`, in order, for the install Makefile.
