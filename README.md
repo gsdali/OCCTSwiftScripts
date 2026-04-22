@@ -34,7 +34,10 @@ dxf-export bracket.brep bracket.dxf --view 0,0,1
 echo '{"points":[...],"constraints":[...]}' | solve-sketch
 occtkit run my_script.swift --format brep,graph-sqlite
 
-# service mode: read JSONL `{"args":[...]}` requests on stdin, write JSONL responses
+# service mode: read JSONL `{"args":[...]}` requests on stdin, get one JSONL
+# envelope per request — `{"ok":true|false,"exit":N,"stdout":"...","stderr":"...","error":"..."?}`.
+# The subcommand's own stdout/stderr (and inherited child-process output) are
+# captured *into* the envelope, not leaked.
 printf '{"args":["a.brep"]}\n{"args":["b.brep"]}\n' | occtkit graph-validate --serve
 
 # uninstall
