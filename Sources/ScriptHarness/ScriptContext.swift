@@ -279,11 +279,14 @@ extension ScriptContext {
 
 public enum ScriptError: Error, LocalizedError {
     case conversionFailed(String)
+    case message(String)
 
     public var errorDescription: String? {
         switch self {
         case .conversionFailed(let detail):
             return "Conversion failed: \(detail)"
+        case .message(let m):
+            return m
         }
     }
 }

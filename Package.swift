@@ -44,5 +44,49 @@ let package = Package(
                 .swiftLanguageMode(.v6)
             ]
         ),
+        .executableTarget(
+            name: "GraphValidate",
+            dependencies: [
+                "ScriptHarness",
+                .product(name: "OCCTSwift", package: "OCCTSwift"),
+            ],
+            path: "Sources/GraphValidate",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .executableTarget(
+            name: "GraphCompact",
+            dependencies: [
+                "ScriptHarness",
+                .product(name: "OCCTSwift", package: "OCCTSwift"),
+            ],
+            path: "Sources/GraphCompact",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .executableTarget(
+            name: "GraphDedup",
+            dependencies: [
+                "ScriptHarness",
+                .product(name: "OCCTSwift", package: "OCCTSwift"),
+            ],
+            path: "Sources/GraphDedup",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .executableTarget(
+            name: "GraphQuery",
+            dependencies: [
+                "ScriptHarness",
+            ],
+            path: "Sources/GraphQuery",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .executableTarget(
+            name: "FeatureRecognize",
+            dependencies: [
+                "ScriptHarness",
+                .product(name: "OCCTSwift", package: "OCCTSwift"),
+            ],
+            path: "Sources/FeatureRecognize",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
     ]
 )
