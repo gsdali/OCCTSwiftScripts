@@ -1,5 +1,5 @@
 {
-  "originHash" : "08e4090af5342c08daa35e1151b6be82aa277d82dbe8de877703827751cf4d37",
+  "originHash" : "794f8b681a8325090703b64f52b3dcf1863c748b65f7dc74313ce78e06a18091",
   "pins" : [
     {
       "identity" : "occtswift",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "e3ac538a8b6ae2e18f450612032d6fc21f4b0dd7",
         "version" : "0.136.0"
+      }
+    },
+    {
+      "identity" : "swiftgcs",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/gsdali/swiftGCS.git",
+      "state" : {
+        "revision" : "e6d3049814c87cf7d3746eb7c5ffa5d190913234",
+        "version" : "0.1.1"
       }
     }
   ],
