@@ -3,7 +3,7 @@ BINDIR  = $(PREFIX)/bin
 BIN     = occtkit
 BUILD   = .build/release/$(BIN)
 
-VERBS = run graph-validate graph-compact graph-dedup graph-query graph-ml feature-recognize solve-sketch dxf-export
+VERBS = run graph-validate graph-compact graph-dedup graph-query graph-ml feature-recognize solve-sketch dxf-export drawing-export
 
 .PHONY: build install uninstall clean help
 

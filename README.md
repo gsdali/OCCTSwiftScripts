@@ -32,6 +32,7 @@ graph-ml part.brep --uv-samples 16 --edge-samples 32 > part.json
 feature-recognize bracket.brep
 dxf-export bracket.brep bracket.dxf --view 0,0,1
 echo '{"points":[...],"constraints":[...]}' | solve-sketch
+echo '{"shape":"part.brep","output":"sheet.dxf","sheet":{"size":"A3","orientation":"landscape","projection":"third","scale":"auto"},"title":{"title":"Part"},"views":[{"name":"front"},{"name":"top"},{"name":"right"}]}' | drawing-export
 occtkit run my_script.swift --format brep,graph-sqlite
 
 # service mode: read JSONL `{"args":[...]}` requests on stdin, get one JSONL
@@ -44,7 +45,9 @@ printf '{"args":["a.brep"]}\n{"args":["b.brep"]}\n' | occtkit graph-validate --s
 make uninstall
 ```
 
-Subcommands: `run`, `graph-validate`, `graph-compact`, `graph-dedup`, `graph-query`, `graph-ml`, `feature-recognize`, `solve-sketch`, `dxf-export`. `occtkit --help` lists them with one-line summaries.
+Subcommands: `run`, `graph-validate`, `graph-compact`, `graph-dedup`, `graph-query`, `graph-ml`, `feature-recognize`, `solve-sketch`, `dxf-export`, `drawing-export`. `occtkit --help` lists them with one-line summaries.
+
+**`drawing-export`** produces a complete ISO 128-30 multi-view technical drawing as DXF R12: ISO 5457 sheet border + centring marks, ISO 7200 title block, ISO 5456-2 projection symbol (first or third angle), HLR-projected orthographic views, section views (3D shape cut by an arbitrary plane and projected into the plane's 2D frame), cutting-plane lines + section labels (e.g. "SECTION A-A"), auto-centerlines for revolution axes, and user-specified centermarks + dimensions. Reads a JSON spec on stdin or from an argv path. See `Sources/occtkit/Drawing/Spec.swift` for the schema; see OCCTSwift#73-#76 for upstream gaps that the verb currently DIYs.
 
 For `occtkit run`: by default the cached SPM workspace under `~/.occtswift-scripts/runner-cache/workspace/` references this package via a path dep auto-detected from the running binary; override with `OCCTKIT_SCRIPTS_PATH=/path/to/OCCTSwiftScripts` or fall back to the published remote tag.
 

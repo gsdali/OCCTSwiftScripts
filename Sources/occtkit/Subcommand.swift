@@ -22,7 +22,11 @@ enum Registry {
         FeatureRecognizeCommand.self,
         SolveSketchCommand.self,
         DXFExportCommand.self,
+        DrawingExportCommand.self,
     ]
+
+    /// Verb names registered in `all`, in order, for the install Makefile.
+    static var verbNames: [String] { all.map { $0.name } }
 
     static func find(_ name: String) -> (any Subcommand.Type)? {
         all.first { $0.name == name }
