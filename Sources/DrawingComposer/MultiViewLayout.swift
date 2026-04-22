@@ -7,26 +7,36 @@ import Foundation
 import OCCTSwift
 import simd
 
-struct ViewItem {
-    let name: String
-    let direction: SIMD3<Double>
-    let drawing: Drawing
-    let bounds: (min: SIMD2<Double>, max: SIMD2<Double>)?
+public struct ViewItem: Sendable {
+    public let name: String
+    public let direction: SIMD3<Double>
+    public let drawing: Drawing
+    public let bounds: (min: SIMD2<Double>, max: SIMD2<Double>)?
+
+    public init(name: String, direction: SIMD3<Double>, drawing: Drawing,
+                bounds: (min: SIMD2<Double>, max: SIMD2<Double>)?) {
+        self.name = name; self.direction = direction
+        self.drawing = drawing; self.bounds = bounds
+    }
 }
 
-struct PlacedView {
-    let item: ViewItem
-    let translate: SIMD2<Double>
-    let scale: Double
+public struct PlacedView: Sendable {
+    public let item: ViewItem
+    public let translate: SIMD2<Double>
+    public let scale: Double
+
+    public init(item: ViewItem, translate: SIMD2<Double>, scale: Double) {
+        self.item = item; self.translate = translate; self.scale = scale
+    }
 }
 
 /// Standard view directions per ISO 128-30. Camera direction = the direction
 /// the viewer is looking *along*. `Drawing.project(_:direction:)` consumes
 /// the same convention.
-enum StandardView: String {
+public enum StandardView: String, Sendable {
     case front, back, top, bottom, left, right, isometric
 
-    var direction: SIMD3<Double> {
+    public var direction: SIMD3<Double> {
         switch self {
         case .front:     return SIMD3( 0, -1,  0)
         case .back:      return SIMD3( 0,  1,  0)
@@ -39,11 +49,13 @@ enum StandardView: String {
     }
 }
 
-enum MultiViewLayout {
+public enum MultiViewLayout {
 
-    static func project(_ shape: Shape,
-                        views: [ViewSpec],
-                        deflection: Double) -> [ViewItem] {
+    /// Project the source shape per-view via OCCTSwift HLR; compute each
+    /// view's 2D bounds.
+    public static func project(_ shape: Shape,
+                                views: [ViewSpec],
+                                deflection: Double) -> [ViewItem] {
         views.compactMap { spec in
             let dir = direction(for: spec)
             guard let drawing = Drawing.project(shape, direction: dir) else { return nil }
@@ -56,7 +68,7 @@ enum MultiViewLayout {
         }
     }
 
-    static func direction(for spec: ViewSpec) -> SIMD3<Double> {
+    public static func direction(for spec: ViewSpec) -> SIMD3<Double> {
         if let d = spec.direction, d.count == 3 {
             return simd_normalize(SIMD3(d[0], d[1], d[2]))
         }
@@ -65,11 +77,11 @@ enum MultiViewLayout {
 
     /// Place views on the sheet around the front-view anchor per ISO 128-30.
     /// Returns each view's `(translate, scale)` for `Drawing.transformed`.
-    static func place(items: [ViewItem],
-                      angle: ProjectionAngle,
-                      sheetCentre: SIMD2<Double>,
-                      scale: Double,
-                      gutter: Double = 25) -> [String: PlacedView] {
+    public static func place(items: [ViewItem],
+                              angle: ProjectionAngle,
+                              sheetCentre: SIMD2<Double>,
+                              scale: Double,
+                              gutter: Double = 25) -> [String: PlacedView] {
         let byName = Dictionary(uniqueKeysWithValues: items.map { ($0.name, $0) })
         guard let anchor = byName["front"] ?? items.first else { return [:] }
         let anchorBB = anchor.bounds ?? (SIMD2(-50, -50), SIMD2(50, 50))

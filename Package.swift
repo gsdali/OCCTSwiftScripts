@@ -11,6 +11,10 @@ let package = Package(
             name: "ScriptHarness",
             targets: ["ScriptHarness"]
         ),
+        .library(
+            name: "DrawingComposer",
+            targets: ["DrawingComposer"]
+        ),
         .executable(
             name: "occtkit",
             targets: ["occtkit"]
@@ -111,10 +115,19 @@ let package = Package(
             path: "Sources/FeatureRecognize",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
+        .target(
+            name: "DrawingComposer",
+            dependencies: [
+                .product(name: "OCCTSwift", package: "OCCTSwift"),
+            ],
+            path: "Sources/DrawingComposer",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
         .executableTarget(
             name: "occtkit",
             dependencies: [
                 "ScriptHarness",
+                "DrawingComposer",
                 .product(name: "OCCTSwift", package: "OCCTSwift"),
                 .product(name: "SwiftGCS", package: "swiftGCS"),
             ],
