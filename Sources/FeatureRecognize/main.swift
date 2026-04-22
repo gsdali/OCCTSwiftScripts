@@ -31,6 +31,8 @@ struct Report: Codable {
     }
 }
 
+FileHandle.standardError.write(Data("DEPRECATED: 'FeatureRecognize' standalone target will be removed in a future release. Use 'occtkit feature-recognize' instead.\n".utf8))
+
 let args = Array(CommandLine.arguments.dropFirst())
 do {
     let path = try GraphIO.argument(at: 0, in: args, usage: "Usage: FeatureRecognize <shape.brep>")

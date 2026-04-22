@@ -75,6 +75,8 @@ func die(_ message: String) -> Never {
     exit(1)
 }
 
+FileHandle.standardError.write(Data("DEPRECATED: 'SolveSketch' standalone target will be removed in a future release. Use 'occtkit solve-sketch' instead.\n".utf8))
+
 let args = Array(CommandLine.arguments.dropFirst())
 
 let inputData: Data

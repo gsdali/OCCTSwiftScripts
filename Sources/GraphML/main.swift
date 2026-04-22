@@ -40,6 +40,8 @@ func parseInt(_ name: String, default def: Int, args: [String]) -> Int {
     return Int(args[i + 1]) ?? def
 }
 
+FileHandle.standardError.write(Data("DEPRECATED: 'GraphML' standalone target will be removed in a future release. Use 'occtkit graph-ml' instead.\n".utf8))
+
 let args = Array(CommandLine.arguments.dropFirst())
 do {
     let usage = "Usage: GraphML <shape.brep> [--uv-samples N] [--edge-samples N]"

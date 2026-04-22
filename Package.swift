@@ -11,6 +11,10 @@ let package = Package(
             name: "ScriptHarness",
             targets: ["ScriptHarness"]
         ),
+        .executable(
+            name: "occtkit",
+            targets: ["occtkit"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/gsdali/OCCTSwift.git", from: "0.136.0"),
@@ -105,6 +109,16 @@ let package = Package(
                 .product(name: "OCCTSwift", package: "OCCTSwift"),
             ],
             path: "Sources/FeatureRecognize",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .executableTarget(
+            name: "occtkit",
+            dependencies: [
+                "ScriptHarness",
+                .product(name: "OCCTSwift", package: "OCCTSwift"),
+                .product(name: "SwiftGCS", package: "swiftGCS"),
+            ],
+            path: "Sources/occtkit",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
     ]

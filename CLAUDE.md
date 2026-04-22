@@ -4,43 +4,50 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-OCCTSwiftScripts is a script harness for rapid OCCTSwift geometry iteration — the OCCTSwift equivalent of CadQuery or OpenSCAD. Edit `Sources/Script/main.swift`, run it, and see results in the OCCTSwiftViewport demo app which watches for output via kqueue.
+OCCTSwiftScripts is a script harness for rapid OCCTSwift geometry iteration — the OCCTSwift equivalent of CadQuery or OpenSCAD — plus a headless CLI (`occtkit`) bundling reusable verbs (graph-validate, solve-sketch, etc.) for downstream consumers (OCCTDesignLoop, OCCTMCP, Python pipelines).
 
-See `docs/SCRIPT_WORKFLOW.md` for the end-to-end workflow guide (writing scripts, gallery views, promoting code into an app library).
+See `docs/SCRIPT_WORKFLOW.md` for the script iteration workflow.
 
 ## Build & Run
 
 ```bash
-swift build              # First build ~30s, incremental ~1-2s
-swift run Script         # Build & execute Sources/Script/main.swift
-swift run OCCTRunner …   # Run an arbitrary external .swift file (see below)
+swift build                                  # First build ~30s, incremental ~1-2s
+swift run Script                             # Build & execute Sources/Script/main.swift
+swift run occtkit <subcommand> [args...]     # Run any verb directly from the build tree
+make install [PREFIX=...]                    # Release build + install occtkit + verb symlinks to $PREFIX/bin
 ```
 
 No tests exist. No linter is configured.
 
 ## Architecture
 
-**Three targets** (see `Package.swift`):
+**Targets** (see `Package.swift`):
 
-- **ScriptHarness** (library product) — `ScriptContext` accumulates geometry, writes BREP files immediately on `add()`, then writes `manifest.json` on `emit()`. Also exposed as an SPM library product so external projects can `import ScriptHarness`.
-- **Script** (executable) — `main.swift` is the user-editable script. Imports both `ScriptHarness` and `OCCTSwift` directly.
-- **OCCTRunner** (executable) — CLI that runs an arbitrary `.swift` file as a script. It maintains a cached SPM workspace under `~/.occtswift-scripts/runner-cache/workspace/`, copies the user's source into it, builds and runs. Supports `--format brep,step,graph-json,graph-sqlite` and `--output <dir>`. When graph formats are requested it injects a `ctx.addGraphsForAllShapes(...)` call before `emit()`; when `step` is omitted it rewrites `ScriptContext()` to disable STEP export.
+- **ScriptHarness** (library product) — `ScriptContext` accumulates geometry, writes BREP files immediately on `add()`, then writes `manifest.json` on `emit()`. Also exposed as an SPM library product so external projects can `import ScriptHarness`. Includes `BREPGraphJSONExporter`, `BREPGraphSQLiteExporter`, and `GraphIO` (shared helpers used by every `occtkit` command and every standalone target — argv parsing, BREP load/write, graph→shape rebuild, JSON emission, all throwing on failure so the `--serve` loop can recover).
+- **Script** (executable) — `Sources/Script/main.swift`, the user-editable iteration scratchpad. Imports `ScriptHarness` and `OCCTSwift` directly.
+- **occtkit** (executable product) — multi-call umbrella binary. Dispatches by `argv[0]` basename (busybox-style symlinks installed by the Makefile) or by first positional arg (`occtkit graph-validate ...`). Each verb lives in `Sources/occtkit/Commands/<Verb>.swift` conforming to the `Subcommand` protocol in `Sources/occtkit/Subcommand.swift`. Verbs: `run` (script-host, replaces standalone OCCTRunner), `graph-validate`, `graph-compact`, `graph-dedup`, `graph-query`, `graph-ml`, `feature-recognize`, `solve-sketch`. **This is the recommended surface going forward.**
+- **Standalone targets (DEPRECATED — preserved for downstream compatibility)** — `OCCTRunner`, `GraphValidate`, `GraphCompact`, `GraphDedup`, `GraphQuery`, `GraphML`, `FeatureRecognize`, `SolveSketch`. Each `main.swift` prints a deprecation notice to stderr on startup but otherwise functions identically. They will be removed in a future release; consumers should migrate to the umbrella subcommands.
 
-**Output pipeline**: `ScriptContext.add()` writes each body as a `.brep` file → `emit()` optionally writes a combined `output.step` → `emit()` writes `manifest.json` last (trigger file for the viewport's kqueue watcher). If any topology graphs were added, per-graph `graph-N.json` (and optionally `graph-N.sqlite`) files are also written before the manifest.
+**`--serve` mode**: any occtkit subcommand accepts `--serve` to read JSONL requests on stdin (`{"args": [...]}` per line) and write JSONL responses on stdout. Per-line errors emit `{"error": "..."}` and the loop continues; EOF on stdin → exit 0. Implemented generically in `Sources/occtkit/main.swift` so every verb supports it identically.
 
-**Output location**: iCloud Drive (`~/Library/Mobile Documents/com~apple~CloudDocs/OCCTSwiftScripts/output/`) if available, otherwise `~/.occtswift-scripts/output/`. Previous output is cleaned on `ScriptContext` init.
+**Output pipeline (Script / `occtkit run`)**: `ScriptContext.add()` writes each body as a `.brep` file → optional graph JSON/SQLite via `addGraphsForAllShapes()` → optional combined `output.step` → `manifest.json` last. Manifest-last write order means a partial failure leaves the previous frame visible in the viewport rather than a half-written manifest.
+
+**Output location**: iCloud Drive (`~/Library/Mobile Documents/com~apple~CloudDocs/OCCTSwiftScripts/output/`) if available, otherwise `~/.occtswift-scripts/output/`. Cleaned on `ScriptContext` init.
+
+**`occtkit run` workspace** (`Sources/occtkit/Commands/Run.swift`): cached SPM workspace at `~/.occtswift-scripts/runner-cache/workspace/`. Resolves the ScriptHarness dep in this order: (1) `$OCCTKIT_SCRIPTS_PATH` if set, (2) auto-detected from the running binary's `argv[0]` (works for `swift run occtkit ...`), (3) fallback to remote `from: "0.2.0"`.
 
 ## Key Conventions
 
-- **Swift 6 strict concurrency**: all targets use `.swiftLanguageMode(.v6)`. `ScriptContext` is `Sendable` using a private `LockedArray` (NSLock-based).
-- **Colors** are `[Float]` RGBA arrays (0-1 range), with predefined constants on `ScriptContext.Colors` (e.g., `.steel`, `.brass`, `.copper`).
-- **Geometry types accepted by `add()`**: `Shape` (solids/shells/compounds/faces), `Wire` (profiles/sketches), `Edge`. Wire and Edge are converted to Shape internally via `Shape.fromWire`/`Shape.fromEdge`.
-- **BREP over STEP**: BREP is the primary format (~1ms vs ~50ms for STEP). STEP export is optional (`ScriptContext(exportSTEP: false)` to disable).
-- **Manifest-last write order**: all BREPs first, then graph exports, then STEP, then `manifest.json` — the watcher triggers on manifest arrival, so any earlier failure leaves no manifest and the viewport keeps the previous frame.
-- **Optional manifest metadata**: pass `ManifestMetadata(name:revision:dateCreated:…)` to `ScriptContext` to embed part/project metadata in the manifest.
-- **TopologyGraph export**: `ctx.addGraph(graph, …)` writes `graph-N.json` (BREPGraph v1 schema) and optionally `graph-N.sqlite` (per-kind tables, adjacency, analysis views) via `BREPGraphJSONExporter` / `BREPGraphSQLiteExporter`. `ctx.addGraphsForAllShapes(sqlite:)` is a convenience that builds a `TopologyGraph` per added shape.
+- **Swift 6 strict concurrency**: all targets use `.swiftLanguageMode(.v6)`. `ScriptContext` is `Sendable` via a private NSLock-based `LockedArray`.
+- **Colors** are `[Float]` RGBA (0–1), with predefined constants on `ScriptContext.Colors` (e.g., `.steel`, `.brass`, `.copper`).
+- **Geometry types accepted by `ScriptContext.add()`**: `Shape` (solids/shells/compounds/faces), `Wire`, `Edge` (the latter two are converted via `Shape.fromWire`/`Shape.fromEdge`).
+- **BREP over STEP**: BREP is the primary format (~1ms vs ~50ms for STEP). STEP export is optional (`ScriptContext(exportSTEP: false)` to disable; `occtkit run --format` controls it via source rewriting).
+- **TopologyGraph export**: `ctx.addGraph(_)` writes `graph-N.json` (BREPGraph v1) and optionally `graph-N.sqlite`. `ctx.addGraphsForAllShapes(sqlite:)` is a convenience for batch export.
+- **occtkit verbs throw, never `exit()`** — required so `--serve` can recover and continue. Use `ScriptError.message(...)` (in `ScriptContext.swift`) for ad-hoc failures; `GraphIO` helpers throw on every failure path. Standalone wrappers catch + exit 1 in their own `main.swift`.
+- **Adding a new verb** = one file in `Sources/occtkit/Commands/` plus one entry in `Registry.all` (`Sources/occtkit/Subcommand.swift`). Standalone targets should not gain new verbs; they exist only for legacy compatibility.
 
 ## Dependencies
 
-- **OCCTSwift** — resolved via SPM from `https://github.com/gsdali/OCCTSwift.git` (>= 0.136.0 — required for `TopologyGraph` / BREPGraph support). Provides ~400+ methods for parametric CAD: primitives, booleans, fillets, sweeps, curves, surfaces, file I/O, etc.
-- **macOS 15+**, **Swift 6.0+**
+- **OCCTSwift** — `https://github.com/gsdali/OCCTSwift.git` (>= 0.136.0; required for `TopologyGraph` / BREPGraph). Provides ~400+ methods for parametric CAD.
+- **swiftGCS** — `https://github.com/gsdali/swiftGCS.git` (>= 0.1.1; required for `solve-sketch`).
+- **macOS 15+**, **Swift 6.0+** (toolchain 6.3+ needed locally because the swiftGCS dep uses tools-version 6.3).

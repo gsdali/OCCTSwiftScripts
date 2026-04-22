@@ -7,6 +7,8 @@ import Foundation
 import OCCTSwift
 import ScriptHarness
 
+FileHandle.standardError.write(Data("DEPRECATED: 'GraphValidate' standalone target will be removed in a future release. Use 'occtkit graph-validate' instead.\n".utf8))
+
 let args = Array(CommandLine.arguments.dropFirst())
 do {
     let path = try GraphIO.argument(at: 0, in: args, usage: "Usage: GraphValidate <shape.brep>")

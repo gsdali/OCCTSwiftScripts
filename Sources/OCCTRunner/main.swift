@@ -7,6 +7,8 @@
 
 import Foundation
 
+FileHandle.standardError.write(Data("DEPRECATED: 'OCCTRunner' standalone target will be removed in a future release. Use 'occtkit run' instead.\n".utf8))
+
 // MARK: - Configuration
 
 struct RunnerConfig {

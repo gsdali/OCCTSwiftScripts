@@ -8,6 +8,8 @@ import Foundation
 import OCCTSwift
 import ScriptHarness
 
+FileHandle.standardError.write(Data("DEPRECATED: 'GraphCompact' standalone target will be removed in a future release. Use 'occtkit graph-compact' instead.\n".utf8))
+
 let args = Array(CommandLine.arguments.dropFirst())
 do {
     let usage = "Usage: GraphCompact <in.brep> <out.brep>"

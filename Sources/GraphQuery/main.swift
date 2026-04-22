@@ -44,6 +44,8 @@ struct Query: Codable {
     }
 }
 
+FileHandle.standardError.write(Data("DEPRECATED: 'GraphQuery' standalone target will be removed in a future release. Use 'occtkit graph-query' instead.\n".utf8))
+
 let args = Array(CommandLine.arguments.dropFirst())
 do {
     let path = try GraphIO.argument(at: 0, in: args, usage: "Usage: GraphQuery <graph.sqlite>")

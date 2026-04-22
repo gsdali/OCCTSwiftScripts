@@ -16,6 +16,38 @@ swift run Script
 
 In the OCCTSwiftViewport demo app (macOS): sidebar > **File & Tools > Script Watcher** > toggle on. Geometry auto-reloads on each run.
 
+## occtkit CLI
+
+A single multi-call binary bundles all the headless verbs. After install (or via `swift run occtkit ...` from a checkout) you can run any of them by name.
+
+```bash
+# install to /usr/local/bin (creates symlinks: graph-validate, solve-sketch, ...)
+make install                 # or: make install PREFIX=$HOME/.local
+
+# one-shot use
+graph-validate body.brep
+graph-compact in.brep out.brep
+graph-query graph.sqlite
+graph-ml part.brep --uv-samples 16 --edge-samples 32 > part.json
+feature-recognize bracket.brep
+echo '{"points":[...],"constraints":[...]}' | solve-sketch
+occtkit run my_script.swift --format brep,graph-sqlite
+
+# service mode: read JSONL `{"args":[...]}` requests on stdin, write JSONL responses
+printf '{"args":["a.brep"]}\n{"args":["b.brep"]}\n' | occtkit graph-validate --serve
+
+# uninstall
+make uninstall
+```
+
+Subcommands: `run`, `graph-validate`, `graph-compact`, `graph-dedup`, `graph-query`, `graph-ml`, `feature-recognize`, `solve-sketch`. `occtkit --help` lists them with one-line summaries.
+
+For `occtkit run`: by default the cached SPM workspace under `~/.occtswift-scripts/runner-cache/workspace/` references this package via a path dep auto-detected from the running binary; override with `OCCTKIT_SCRIPTS_PATH=/path/to/OCCTSwiftScripts` or fall back to the published remote tag.
+
+### Deprecated standalone targets
+
+Each verb also has a per-target standalone executable (`GraphValidate`, `SolveSketch`, `OCCTRunner`, etc.). These are **deprecated** and print a notice to stderr on startup. They will be removed in a future release; migrate to the equivalent `occtkit <verb>` subcommand at your convenience.
+
 ## What You Can Do
 
 The script has access to the **entire OCCTSwift API** (~400+ methods):
