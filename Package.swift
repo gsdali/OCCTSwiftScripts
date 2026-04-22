@@ -80,6 +80,15 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .executableTarget(
+            name: "GraphML",
+            dependencies: [
+                "ScriptHarness",
+                .product(name: "OCCTSwift", package: "OCCTSwift"),
+            ],
+            path: "Sources/GraphML",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .executableTarget(
             name: "FeatureRecognize",
             dependencies: [
                 "ScriptHarness",
