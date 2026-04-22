@@ -74,6 +74,18 @@ enum ViewPlacer {
             case .textLabel(let t):
                 writer.addText(t.text, at: placement.t(t.position),
                                height: t.height, rotationDeg: t.rotation * 180 / .pi, layer: "TEXT")
+            case .hatch(let h):
+                let dir = SIMD2(cos(h.angle), sin(h.angle))
+                let segments = HatchPattern.generate(
+                    boundary: h.boundary,
+                    direction: dir,
+                    spacing: h.spacing
+                )
+                for seg in segments {
+                    writer.addLine(from: placement.t(seg.start),
+                                   to: placement.t(seg.end),
+                                   layer: h.layer)
+                }
             }
         }
     }
