@@ -21,6 +21,7 @@ enum Registry {
         GraphMLCommand.self,
         FeatureRecognizeCommand.self,
         SolveSketchCommand.self,
+        DXFExportCommand.self,
     ]
 
     static func find(_ name: String) -> (any Subcommand.Type)? {

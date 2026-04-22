@@ -25,7 +25,7 @@ No tests exist. No linter is configured.
 
 - **ScriptHarness** (library product) — `ScriptContext` accumulates geometry, writes BREP files immediately on `add()`, then writes `manifest.json` on `emit()`. Also exposed as an SPM library product so external projects can `import ScriptHarness`. Includes `BREPGraphJSONExporter`, `BREPGraphSQLiteExporter`, and `GraphIO` (shared helpers used by every `occtkit` command and every standalone target — argv parsing, BREP load/write, graph→shape rebuild, JSON emission, all throwing on failure so the `--serve` loop can recover).
 - **Script** (executable) — `Sources/Script/main.swift`, the user-editable iteration scratchpad. Imports `ScriptHarness` and `OCCTSwift` directly.
-- **occtkit** (executable product) — multi-call umbrella binary. Dispatches by `argv[0]` basename (busybox-style symlinks installed by the Makefile) or by first positional arg (`occtkit graph-validate ...`). Each verb lives in `Sources/occtkit/Commands/<Verb>.swift` conforming to the `Subcommand` protocol in `Sources/occtkit/Subcommand.swift`. Verbs: `run` (script-host, replaces standalone OCCTRunner), `graph-validate`, `graph-compact`, `graph-dedup`, `graph-query`, `graph-ml`, `feature-recognize`, `solve-sketch`. **This is the recommended surface going forward.**
+- **occtkit** (executable product) — multi-call umbrella binary. Dispatches by `argv[0]` basename (busybox-style symlinks installed by the Makefile) or by first positional arg (`occtkit graph-validate ...`). Each verb lives in `Sources/occtkit/Commands/<Verb>.swift` conforming to the `Subcommand` protocol in `Sources/occtkit/Subcommand.swift`. Verbs: `run` (script-host, replaces standalone OCCTRunner), `graph-validate`, `graph-compact`, `graph-dedup`, `graph-query`, `graph-ml`, `feature-recognize`, `solve-sketch`, `dxf-export`. **This is the recommended surface going forward.**
 - **Standalone targets (DEPRECATED — preserved for downstream compatibility)** — `OCCTRunner`, `GraphValidate`, `GraphCompact`, `GraphDedup`, `GraphQuery`, `GraphML`, `FeatureRecognize`, `SolveSketch`. Each `main.swift` prints a deprecation notice to stderr on startup but otherwise functions identically. They will be removed in a future release; consumers should migrate to the umbrella subcommands.
 
 **`--serve` mode**: any occtkit subcommand accepts `--serve` to read JSONL requests on stdin (`{"args": [...]}` per line) and write JSONL responses on stdout. Per-line errors emit `{"error": "..."}` and the loop continues; EOF on stdin → exit 0. Implemented generically in `Sources/occtkit/main.swift` so every verb supports it identically.
@@ -48,6 +48,6 @@ No tests exist. No linter is configured.
 
 ## Dependencies
 
-- **OCCTSwift** — `https://github.com/gsdali/OCCTSwift.git` (>= 0.136.0; required for `TopologyGraph` / BREPGraph). Provides ~400+ methods for parametric CAD.
+- **OCCTSwift** — `https://github.com/gsdali/OCCTSwift.git` (>= 0.140.0; tracks the engineering-drawings stack: axes, dimensions, DXF export, thread features, GD&T write path). Provides ~400+ methods for parametric CAD.
 - **swiftGCS** — `https://github.com/gsdali/swiftGCS.git` (>= 0.1.1; required for `solve-sketch`).
 - **macOS 15+**, **Swift 6.0+** (toolchain 6.3+ needed locally because the swiftGCS dep uses tools-version 6.3).

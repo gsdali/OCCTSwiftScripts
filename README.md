@@ -30,6 +30,7 @@ graph-compact in.brep out.brep
 graph-query graph.sqlite
 graph-ml part.brep --uv-samples 16 --edge-samples 32 > part.json
 feature-recognize bracket.brep
+dxf-export bracket.brep bracket.dxf --view 0,0,1
 echo '{"points":[...],"constraints":[...]}' | solve-sketch
 occtkit run my_script.swift --format brep,graph-sqlite
 
@@ -40,7 +41,7 @@ printf '{"args":["a.brep"]}\n{"args":["b.brep"]}\n' | occtkit graph-validate --s
 make uninstall
 ```
 
-Subcommands: `run`, `graph-validate`, `graph-compact`, `graph-dedup`, `graph-query`, `graph-ml`, `feature-recognize`, `solve-sketch`. `occtkit --help` lists them with one-line summaries.
+Subcommands: `run`, `graph-validate`, `graph-compact`, `graph-dedup`, `graph-query`, `graph-ml`, `feature-recognize`, `solve-sketch`, `dxf-export`. `occtkit --help` lists them with one-line summaries.
 
 For `occtkit run`: by default the cached SPM workspace under `~/.occtswift-scripts/runner-cache/workspace/` references this package via a path dep auto-detected from the running binary; override with `OCCTKIT_SCRIPTS_PATH=/path/to/OCCTSwiftScripts` or fall back to the published remote tag.
 
