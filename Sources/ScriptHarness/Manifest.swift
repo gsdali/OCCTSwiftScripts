@@ -11,6 +11,7 @@ public struct ScriptManifest: Codable, Sendable {
     public let timestamp: Date
     public let description: String?
     public let bodies: [BodyDescriptor]
+    public let graphs: [GraphDescriptor]?
     public let metadata: ManifestMetadata?
 
     public init(
@@ -18,12 +19,14 @@ public struct ScriptManifest: Codable, Sendable {
         timestamp: Date = Date(),
         description: String?,
         bodies: [BodyDescriptor],
+        graphs: [GraphDescriptor]? = nil,
         metadata: ManifestMetadata? = nil
     ) {
         self.version = version
         self.timestamp = timestamp
         self.description = description
         self.bodies = bodies
+        self.graphs = graphs
         self.metadata = metadata
     }
 }
@@ -54,6 +57,43 @@ public struct ManifestMetadata: Codable, Sendable {
         self.source = source
         self.tags = tags
         self.notes = notes
+    }
+}
+
+/// Summary statistics for a topology graph.
+public struct GraphStats: Codable, Sendable {
+    public let faces: Int
+    public let edges: Int
+    public let vertices: Int
+    public let shells: Int
+    public let solids: Int
+
+    public init(faces: Int, edges: Int, vertices: Int, shells: Int, solids: Int) {
+        self.faces = faces
+        self.edges = edges
+        self.vertices = vertices
+        self.shells = shells
+        self.solids = solids
+    }
+}
+
+/// Describes a topology graph in the manifest.
+public struct GraphDescriptor: Codable, Sendable {
+    public let id: String
+    public let file: String
+    public let sourceBodyId: String?
+    public let stats: GraphStats?
+
+    public init(
+        id: String,
+        file: String,
+        sourceBodyId: String? = nil,
+        stats: GraphStats? = nil
+    ) {
+        self.id = id
+        self.file = file
+        self.sourceBodyId = sourceBodyId
+        self.stats = stats
     }
 }
 

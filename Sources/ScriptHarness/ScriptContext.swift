@@ -35,6 +35,7 @@ import OCCTSwift
 public final class ScriptContext: Sendable {
     private let outputDir: URL
     private let descriptors: LockedArray<BodyDescriptor>
+    private let graphDescriptors: LockedArray<GraphDescriptor>
     private let shapes: LockedArray<(Shape, String)>
 
     /// Whether to also write a combined STEP file on emit (default: true).
@@ -62,6 +63,7 @@ public final class ScriptContext: Sendable {
         self.exportSTEP = exportSTEP
         self.metadata = metadata
         self.descriptors = LockedArray()
+        self.graphDescriptors = LockedArray()
         self.shapes = LockedArray()
 
         // Clean previous output
@@ -149,6 +151,62 @@ public final class ScriptContext: Sendable {
         try add(compound, id: id, color: color, name: name)
     }
 
+    // MARK: - Add TopologyGraph
+
+    /// Add a topology graph to the output. Exports as JSON and optionally SQLite.
+    /// - Parameters:
+    ///   - graph: The topology graph to export.
+    ///   - id: Graph identifier (default: `"graph-N"`).
+    ///   - sourceBodyId: Optional body ID this graph was built from.
+    ///   - sqlite: Whether to also export a SQLite database (default: true).
+    public func addGraph(
+        _ graph: TopologyGraph,
+        id: String? = nil,
+        sourceBodyId: String? = nil,
+        sqlite: Bool = true
+    ) throws {
+        let index = graphDescriptors.count
+        let graphID = id ?? "graph-\(index)"
+
+        // JSON export
+        let jsonFilename = "graph-\(index).json"
+        let jsonURL = outputDir.appendingPathComponent(jsonFilename)
+        try BREPGraphJSONExporter.export(graph, to: jsonURL, description: graphID)
+
+        // SQLite export
+        if sqlite {
+            let sqliteFilename = "graph-\(index).sqlite"
+            let sqliteURL = outputDir.appendingPathComponent(sqliteFilename)
+            try BREPGraphSQLiteExporter.export(graph, to: sqliteURL, description: graphID)
+        }
+
+        let s = graph.stats
+        let stats = GraphStats(
+            faces: s.faces,
+            edges: s.edges,
+            vertices: s.vertices,
+            shells: s.shells,
+            solids: s.solids
+        )
+
+        let descriptor = GraphDescriptor(
+            id: graphID,
+            file: jsonFilename,
+            sourceBodyId: sourceBodyId,
+            stats: stats
+        )
+        graphDescriptors.append(descriptor)
+    }
+
+    /// Build and export topology graphs for all shapes added so far.
+    /// Convenience method — builds a `TopologyGraph` per shape and exports each.
+    public func addGraphsForAllShapes(sqlite: Bool = true) throws {
+        for (shape, bodyID) in shapes.all {
+            guard let graph = TopologyGraph(shape: shape) else { continue }
+            try addGraph(graph, sourceBodyId: bodyID, sqlite: sqlite)
+        }
+    }
+
     // MARK: - Emit
 
     /// Write manifest.json (trigger file) and optional STEP export.
@@ -168,9 +226,11 @@ public final class ScriptContext: Sendable {
         }
 
         // Write manifest last (trigger file for watcher)
+        let graphs = graphDescriptors.all
         let manifest = ScriptManifest(
             description: description,
             bodies: descriptors.all,
+            graphs: graphs.isEmpty ? nil : graphs,
             metadata: metadata
         )
 
@@ -183,9 +243,13 @@ public final class ScriptContext: Sendable {
         try data.write(to: manifestURL)
 
         let bodyCount = descriptors.count
+        let graphCount = graphDescriptors.count
         var msg = "Script output: \(bodyCount) bodies written to \(outputDir.path)"
         if exportSTEP {
             msg += "\n  STEP: output.step"
+        }
+        if graphCount > 0 {
+            msg += "\n  Graphs: \(graphCount) topology graph(s)"
         }
         print(msg)
     }

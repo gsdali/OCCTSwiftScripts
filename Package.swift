@@ -13,7 +13,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/gsdali/OCCTSwift.git", from: "0.135.0"),
+        .package(url: "https://github.com/gsdali/OCCTSwift.git", from: "0.136.0"),
     ],
     targets: [
         .target(
@@ -33,6 +33,13 @@ let package = Package(
                 .product(name: "OCCTSwift", package: "OCCTSwift"),
             ],
             path: "Sources/Script",
+            swiftSettings: [
+                .swiftLanguageMode(.v6)
+            ]
+        ),
+        .executableTarget(
+            name: "OCCTRunner",
+            path: "Sources/OCCTRunner",
             swiftSettings: [
                 .swiftLanguageMode(.v6)
             ]
