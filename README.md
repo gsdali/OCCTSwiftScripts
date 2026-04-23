@@ -21,7 +21,7 @@ In the OCCTSwiftViewport demo app (macOS): sidebar > **File & Tools > Script Wat
 A single multi-call binary bundles all the headless verbs. After install (or via `swift run occtkit ...` from a checkout) you can run any of them by name.
 
 ```bash
-# install to /usr/local/bin (creates symlinks: graph-validate, solve-sketch, ...)
+# install to /usr/local/bin (creates symlinks: graph-validate, drawing-export, ...)
 make install                 # or: make install PREFIX=$HOME/.local
 
 # one-shot use
@@ -31,7 +31,6 @@ graph-query graph.sqlite
 graph-ml part.brep --uv-samples 16 --edge-samples 32 > part.json
 feature-recognize bracket.brep
 dxf-export bracket.brep bracket.dxf --view 0,0,1
-echo '{"points":[...],"constraints":[...]}' | solve-sketch
 echo '{"shape":"part.brep","output":"sheet.dxf","sheet":{"size":"a3","orientation":"landscape","projection":"third","scale":"auto"},"title":{"title":"Part"},"views":[{"name":"front"},{"name":"top"},{"name":"right"}]}' | drawing-export
 echo '{"outputDir":"/tmp/out","outputName":"shaft","features":[{"kind":"revolve","id":"shaft","profile_points_2d":[[0,0],[10,0],[10,40],[0,40]],"axis_origin":[0,0,0],"axis_direction":[0,0,1],"angle_deg":360}]}' | reconstruct
 occtkit run my_script.swift --format brep,graph-sqlite
@@ -46,7 +45,9 @@ printf '{"args":["a.brep"]}\n{"args":["b.brep"]}\n' | occtkit graph-validate --s
 make uninstall
 ```
 
-Subcommands: `run`, `graph-validate`, `graph-compact`, `graph-dedup`, `graph-query`, `graph-ml`, `feature-recognize`, `solve-sketch`, `dxf-export`, `drawing-export`, `reconstruct`. `occtkit --help` lists them with one-line summaries.
+Subcommands: `run`, `graph-validate`, `graph-compact`, `graph-dedup`, `graph-query`, `graph-ml`, `feature-recognize`, `dxf-export`, `drawing-export`, `reconstruct`. `occtkit --help` lists them with one-line summaries.
+
+> **Note**: 2D constraint solving (previously the `solve-sketch` verb) has been removed from occtkit to keep this project free of closed-source dependencies. Downstream consumers that need constraint-based sketch solving should wire up their own solver (e.g., via a separate CLI) and call it outside occtkit.
 
 **`drawing-export`** produces a complete ISO 128-30 multi-view technical drawing as DXF R12: ISO 5457 sheet border + centring marks, ISO 7200 title block (with material / weight / revision / sheet number / etc.), ISO 5456-2 first/third-angle projection symbol, HLR orthographic views, section views (auto-hatched per ISO 128-50), cutting-plane lines + labels (ISO 128-40), auto-centerlines (revolution axes) + auto-centermarks (circular features), ISO 6410 cosmetic threads, ISO 1302 surface-finish symbols, ISO 1101 GD&T feature-control frames, detail views, and user-specified linear/radial/diameter/angular dimensions. ISO 5455 standard scales auto-snap. Reads a JSON spec on stdin or from an argv path. See `Sources/occtkit/Drawing/Spec.swift` for the full schema. Implementation orchestrates OCCTSwift v0.147+ primitives — see CLAUDE.md for the exact API set.
 
@@ -56,7 +57,7 @@ For `occtkit run`: by default the cached SPM workspace under `~/.occtswift-scrip
 
 ### Deprecated standalone targets
 
-Each verb also has a per-target standalone executable (`GraphValidate`, `SolveSketch`, `OCCTRunner`, etc.). These are **deprecated** and print a notice to stderr on startup. They will be removed in a future release; migrate to the equivalent `occtkit <verb>` subcommand at your convenience.
+Each verb also has a per-target standalone executable (`GraphValidate`, `OCCTRunner`, etc.). These are **deprecated** and print a notice to stderr on startup. They will be removed in a future release; migrate to the equivalent `occtkit <verb>` subcommand at your convenience.
 
 ## What You Can Do
 

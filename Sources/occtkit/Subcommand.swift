@@ -20,7 +20,6 @@ enum Registry {
         GraphQueryCommand.self,
         GraphMLCommand.self,
         FeatureRecognizeCommand.self,
-        SolveSketchCommand.self,
         DXFExportCommand.self,
         DrawingExportCommand.self,
         ReconstructCommand.self,

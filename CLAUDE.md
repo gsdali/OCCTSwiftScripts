@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-OCCTSwiftScripts is a script harness for rapid OCCTSwift geometry iteration — the OCCTSwift equivalent of CadQuery or OpenSCAD — plus a headless CLI (`occtkit`) bundling reusable verbs (graph-validate, solve-sketch, etc.) for downstream consumers (OCCTDesignLoop, OCCTMCP, Python pipelines).
+OCCTSwiftScripts is a script harness for rapid OCCTSwift geometry iteration — the OCCTSwift equivalent of CadQuery or OpenSCAD — plus a headless CLI (`occtkit`) bundling reusable verbs (graph-validate, drawing-export, etc.) for downstream consumers (OCCTMCP, Python pipelines).
+
+**Open-source boundary**: LGPL-2.1, depends only on open-source Swift packages (OCCTSwift). No closed-source transitive deps; constraint-solving (previously `solve-sketch`) was removed when the swiftGCS dep was dropped — downstream closed-source consumers wire their own solver.
 
 See `docs/SCRIPT_WORKFLOW.md` for the script iteration workflow.
 
@@ -25,12 +27,12 @@ No tests exist. No linter is configured.
 
 - **ScriptHarness** (library product) — `ScriptContext` accumulates geometry, writes BREP files immediately on `add()`, then writes `manifest.json` on `emit()`. Also exposed as an SPM library product so external projects can `import ScriptHarness`. Includes `BREPGraphJSONExporter`, `BREPGraphSQLiteExporter`, and `GraphIO` (shared helpers used by every `occtkit` command and every standalone target — argv parsing, BREP load/write, graph→shape rebuild, JSON emission, all throwing on failure so the `--serve` loop can recover).
 - **Script** (executable) — `Sources/Script/main.swift`, the user-editable iteration scratchpad. Imports `ScriptHarness` and `OCCTSwift` directly.
-- **occtkit** (executable product) — multi-call umbrella binary. Dispatches by `argv[0]` basename (busybox-style symlinks installed by the Makefile) or by first positional arg (`occtkit graph-validate ...`). Each verb lives in `Sources/occtkit/Commands/<Verb>.swift` conforming to the `Subcommand` protocol in `Sources/occtkit/Subcommand.swift`. Verbs: `run` (script-host, replaces standalone OCCTRunner), `graph-validate`, `graph-compact`, `graph-dedup`, `graph-query`, `graph-ml`, `feature-recognize`, `solve-sketch`, `dxf-export`, `drawing-export`, `reconstruct`. **This is the recommended surface going forward.**
+- **occtkit** (executable product) — multi-call umbrella binary. Dispatches by `argv[0]` basename (busybox-style symlinks installed by the Makefile) or by first positional arg (`occtkit graph-validate ...`). Each verb lives in `Sources/occtkit/Commands/<Verb>.swift` conforming to the `Subcommand` protocol in `Sources/occtkit/Subcommand.swift`. Verbs: `run` (script-host, replaces standalone OCCTRunner), `graph-validate`, `graph-compact`, `graph-dedup`, `graph-query`, `graph-ml`, `feature-recognize`, `dxf-export`, `drawing-export`, `reconstruct`. **This is the recommended surface going forward.**
 
 **`drawing-export`** is the multi-view ISO technical drawing orchestrator. Its support code lives in `Sources/occtkit/Drawing/` (`Spec.swift`, `MultiViewLayout.swift`). The verb consumes a JSON spec and produces a single DXF R12 sheet by composing OCCTSwift v0.147+ primitives: `Sheet.render` (ISO 5457 border + ISO 7200 title block + ISO 5456-2 projection symbol), `Drawing.project` per view, `Drawing.bounds` for autoscale, `Drawing.transformed` + `DXFWriter.collectFromDrawing` for placement, `Shape.section2DView` (auto-hatched per ISO 128-50), `Drawing.addCuttingPlaneLine` (ISO 128-40), `Drawing.addAutoCentrelines` + `addAutoCentermarks`, `Drawing.addCosmeticThreadSide` (ISO 6410), `DrawingAnnotation.surfaceFinish` (ISO 1302), `DrawingAnnotation.featureControlFrame` (ISO 1101 GD&T), `Drawing.detailView`, and `DrawingScale.preferred` (ISO 5455 snapping). The previously-DIY'd Sheet/PaperSize/SectionExtraction/ViewPlacer files were removed in rc.6 once their upstream equivalents landed.
 
 **`reconstruct`** is the JSON `[FeatureSpec]` → BREP verb. Wraps `FeatureReconstructor.buildJSON(_:)` (OCCTSwift v0.147). Request schema `{outputDir, outputName?, features:[<entries>]}` where each entry has a `kind` discriminator (`revolve`/`extrude`/`hole`/`thread`/`fillet`/`chamfer`) and snake_case fields per OCCTSwift's private `FeatureEntry` decoder. Closes #3.
-- **Standalone targets (DEPRECATED — preserved for downstream compatibility)** — `OCCTRunner`, `GraphValidate`, `GraphCompact`, `GraphDedup`, `GraphQuery`, `GraphML`, `FeatureRecognize`, `SolveSketch`. Each `main.swift` prints a deprecation notice to stderr on startup but otherwise functions identically. They will be removed in a future release; consumers should migrate to the umbrella subcommands.
+- **Standalone targets (DEPRECATED — preserved for downstream compatibility)** — `OCCTRunner`, `GraphValidate`, `GraphCompact`, `GraphDedup`, `GraphQuery`, `GraphML`, `FeatureRecognize`. Each `main.swift` prints a deprecation notice to stderr on startup but otherwise functions identically. They will be removed in a future release; consumers should migrate to the umbrella subcommands.
 
 **`--serve` mode**: any occtkit subcommand accepts `--serve` to read JSONL requests on stdin (`{"args": [...]}` per line) and write JSONL **envelopes** on stdout — one envelope per request, success or failure: `{"ok": bool, "exit": int, "stdout": str, "stderr": str, "error": str?}`. The subcommand's own stdout/stderr (and any inherited child-process output, e.g. `swift build` invoked by `run`) are captured into the envelope's `stdout`/`stderr` fields via per-request FD redirection to temp files — they do *not* leak to occtkit's own stdout. EOF on stdin → exit 0. Implemented generically in `Sources/occtkit/main.swift` so every verb supports it identically. Closes #5.
 
@@ -53,5 +55,4 @@ No tests exist. No linter is configured.
 ## Dependencies
 
 - **OCCTSwift** — `https://github.com/gsdali/OCCTSwift.git` (>= 0.147.0; full ISO drawings stack — Sheet/TitleBlock/PaperSize/ProjectionSymbol/Section2D/Hatch/Drawing.transformed/AutoCentermarks/CuttingPlaneLine/CosmeticThread/SurfaceFinish/GDT/DetailView/DrawingScale, plus FeatureReconstructor for `reconstruct`). Provides ~400+ methods for parametric CAD.
-- **swiftGCS** — `https://github.com/gsdali/swiftGCS.git` (>= 0.1.1; required for `solve-sketch`).
-- **macOS 15+**, **Swift 6.0+** (toolchain 6.3+ needed locally because the swiftGCS dep uses tools-version 6.3).
+- **macOS 15+**, **Swift 6.0+**.

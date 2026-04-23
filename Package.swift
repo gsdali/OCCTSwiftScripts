@@ -22,7 +22,6 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/gsdali/OCCTSwift.git", from: "0.147.0"),
-        .package(url: "https://github.com/gsdali/swiftGCS.git", from: "0.1.1"),
     ],
     targets: [
         .target(
@@ -98,15 +97,6 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .executableTarget(
-            name: "SolveSketch",
-            dependencies: [
-                "ScriptHarness",
-                .product(name: "SwiftGCS", package: "swiftGCS"),
-            ],
-            path: "Sources/SolveSketch",
-            swiftSettings: [.swiftLanguageMode(.v6)]
-        ),
-        .executableTarget(
             name: "FeatureRecognize",
             dependencies: [
                 "ScriptHarness",
@@ -129,7 +119,6 @@ let package = Package(
                 "ScriptHarness",
                 "DrawingComposer",
                 .product(name: "OCCTSwift", package: "OCCTSwift"),
-                .product(name: "SwiftGCS", package: "swiftGCS"),
             ],
             path: "Sources/occtkit",
             swiftSettings: [.swiftLanguageMode(.v6)]
