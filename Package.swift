@@ -11,9 +11,17 @@ let package = Package(
             name: "ScriptHarness",
             targets: ["ScriptHarness"]
         ),
+        .library(
+            name: "DrawingComposer",
+            targets: ["DrawingComposer"]
+        ),
+        .executable(
+            name: "occtkit",
+            targets: ["occtkit"]
+        ),
     ],
     dependencies: [
-        .package(url: "https://github.com/gsdali/OCCTSwift.git", from: "0.140.0"),
+        .package(url: "https://github.com/gsdali/OCCTSwift.git", from: "0.147.0"),
     ],
     targets: [
         .target(
@@ -43,6 +51,77 @@ let package = Package(
             swiftSettings: [
                 .swiftLanguageMode(.v6)
             ]
+        ),
+        .executableTarget(
+            name: "GraphValidate",
+            dependencies: [
+                "ScriptHarness",
+                .product(name: "OCCTSwift", package: "OCCTSwift"),
+            ],
+            path: "Sources/GraphValidate",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .executableTarget(
+            name: "GraphCompact",
+            dependencies: [
+                "ScriptHarness",
+                .product(name: "OCCTSwift", package: "OCCTSwift"),
+            ],
+            path: "Sources/GraphCompact",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .executableTarget(
+            name: "GraphDedup",
+            dependencies: [
+                "ScriptHarness",
+                .product(name: "OCCTSwift", package: "OCCTSwift"),
+            ],
+            path: "Sources/GraphDedup",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .executableTarget(
+            name: "GraphQuery",
+            dependencies: [
+                "ScriptHarness",
+            ],
+            path: "Sources/GraphQuery",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .executableTarget(
+            name: "GraphML",
+            dependencies: [
+                "ScriptHarness",
+                .product(name: "OCCTSwift", package: "OCCTSwift"),
+            ],
+            path: "Sources/GraphML",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .executableTarget(
+            name: "FeatureRecognize",
+            dependencies: [
+                "ScriptHarness",
+                .product(name: "OCCTSwift", package: "OCCTSwift"),
+            ],
+            path: "Sources/FeatureRecognize",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .target(
+            name: "DrawingComposer",
+            dependencies: [
+                .product(name: "OCCTSwift", package: "OCCTSwift"),
+            ],
+            path: "Sources/DrawingComposer",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .executableTarget(
+            name: "occtkit",
+            dependencies: [
+                "ScriptHarness",
+                "DrawingComposer",
+                .product(name: "OCCTSwift", package: "OCCTSwift"),
+            ],
+            path: "Sources/occtkit",
+            swiftSettings: [.swiftLanguageMode(.v6)]
         ),
     ]
 )
