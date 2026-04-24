@@ -227,22 +227,22 @@ public enum Composer {
                   sf.position.count == 2, sf.leaderTo.count == 2 else { continue }
             let symbol = SurfaceFinishSymbol(rawValue: sf.symbol ?? "machiningRequired")
                          ?? .machiningRequired
-            replay(DrawingAnnotation.surfaceFinish(
+            item.drawing.append(contentsOf: DrawingAnnotation.surfaceFinish(
                 at: SIMD2(sf.position[0], sf.position[1]),
                 leaderTo: SIMD2(sf.leaderTo[0], sf.leaderTo[1]),
                 ra: sf.ra, symbol: symbol, method: sf.method
-            ), on: item.drawing)
+            ))
         }
 
         for g in spec.gdt ?? [] {
             guard let item = byName[g.view], g.position.count == 2,
                   let symbol = GDTSymbol(rawValue: g.symbol) else { continue }
             let leader = g.leaderTo.flatMap { $0.count == 2 ? SIMD2($0[0], $0[1]) : nil }
-            replay(DrawingAnnotation.featureControlFrame(
+            item.drawing.append(contentsOf: DrawingAnnotation.featureControlFrame(
                 at: SIMD2(g.position[0], g.position[1]),
                 symbol: symbol, tolerance: g.tolerance,
                 datums: g.datums ?? [], leaderTo: leader
-            ), on: item.drawing)
+            ))
         }
 
         for d in spec.dimensions ?? [] {
@@ -276,24 +276,11 @@ public enum Composer {
         }
     }
 
-    /// Re-emit a list of `DrawingAnnotation` onto a `Drawing` via its typed
-    /// add-* methods. Workaround for the absence of public
-    /// `Drawing.appendAnnotation(_:)` — see OCCTSwift#83.
-    static func replay(_ anns: [DrawingAnnotation], on drawing: Drawing) {
-        for ann in anns {
-            switch ann {
-            case .centreline(let c):
-                drawing.addCentreLine(from: c.from, to: c.to, style: c.style, id: c.id)
-            case .centermark(let m):
-                drawing.addCentermark(centre: m.centre, extent: m.extent, style: m.style, id: m.id)
-            case .textLabel(let t):
-                drawing.addTextLabel(t.text, at: t.position, height: t.height,
-                                     rotation: t.rotation, id: t.id)
-            case .hatch, .cuttingPlaneLine:
-                break
-            }
-        }
-    }
+    // The previous in-house `replay(_:on:)` helper has been removed: the
+    // upstream `Drawing.append(contentsOf:)` API (OCCTSwift v0.148+, closing
+    // OCCTSwift#84) now dispatches every `DrawingAnnotation` case
+    // exhaustively, including `.hatch` / `.cuttingPlaneLine` / `.balloon`
+    // (v0.150) which the local switch silently dropped.
 
     // MARK: - Scale (ISO 5455)
 
