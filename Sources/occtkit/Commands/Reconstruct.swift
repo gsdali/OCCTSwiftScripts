@@ -9,14 +9,10 @@
 // `FeatureReconstructor.inputBodySentinel` constant ("@input"); when the
 // request envelope carries `inputBrep`, we load it and pass it through.
 // Hole / fillet / chamfer entries operate on `BuildContext.current` directly
-// and so cut into / finish the input body without needing to name it.
-//
-// Known upstream gap (OCCTSwift#88): explicit `"kind": "boolean"` entries
-// referencing `@input` in their `left`/`right` operand are silently dropped
-// by FeatureEntry's JSON decoder — the kernel's `applyBoolean` is wired up
-// but unreachable from the JSON front end. Until that lands, use `hole` for
-// circular cuts and rely on `absorbAdditive`'s implicit union for additive
-// composition; non-circular cut profiles via JSON booleans don't work yet.
+// and so cut into / finish the input body without needing to name it; v0.152.1
+// (OCCTSwift#88) added the `case "boolean":` JSON decoder branch so explicit
+// `{"kind":"boolean","op":"subtract","left":"@input","right":<id>}` entries
+// can express non-circular pocket cuts that reference the seeded body.
 //
 // Request schema: a JSON object with the keys:
 //   outputDir   path where the rebuilt BREP is written
