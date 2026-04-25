@@ -4,12 +4,29 @@
 // landed v0.142) and #82 (FeatureSpec Codable; ended up as a discriminator-flat
 // JSON front end via FeatureReconstructor.buildJSON in v0.147).
 //
-// Request schema: a JSON object with three top-level keys:
+// Closes OCCTSwiftScripts#13 (chained composition). OCCTSwift v0.152 added an
+// optional `inputBody:` parameter to FeatureReconstructor.build(JSON)? plus the
+// `FeatureReconstructor.inputBodySentinel` constant ("@input"); when the
+// request envelope carries `inputBrep`, we load it and pass it through.
+// Hole / fillet / chamfer entries operate on `BuildContext.current` directly
+// and so cut into / finish the input body without needing to name it.
+//
+// Known upstream gap (OCCTSwift#88): explicit `"kind": "boolean"` entries
+// referencing `@input` in their `left`/`right` operand are silently dropped
+// by FeatureEntry's JSON decoder — the kernel's `applyBoolean` is wired up
+// but unreachable from the JSON front end. Until that lands, use `hole` for
+// circular cuts and rely on `absorbAdditive`'s implicit union for additive
+// composition; non-circular cut profiles via JSON booleans don't work yet.
+//
+// Request schema: a JSON object with the keys:
 //   outputDir   path where the rebuilt BREP is written
 //   outputName  optional file stem (default "reconstructed")
+//   inputBrep   optional path to a starting BREP. When present, the kernel
+//               seeds BuildContext.current with this body and registers it
+//               under "@input" for boolean/fillet/chamfer references.
 //   features    array of feature entries — each with a "kind" discriminator
 //               ("revolve" | "extrude" | "hole" | "thread" | "fillet" |
-//                "chamfer") and snake_case fields per
+//                "chamfer" | "boolean") and snake_case fields per
 //               FeatureReconstructor.swift's private FeatureEntry decoder.
 //
 // Stdout: JSON envelope:
@@ -75,6 +92,13 @@ enum ReconstructCommand: Subcommand {
             throw ScriptError.message("Missing required field: features (array)")
         }
 
+        let inputBody: Shape?
+        if let inputPath = dict["inputBrep"] as? String {
+            inputBody = try GraphIO.loadBREP(at: inputPath)
+        } else {
+            inputBody = nil
+        }
+
         let envelope: [String: Any] = ["features": featuresAny]
         let envelopeData: Data
         do {
@@ -85,7 +109,7 @@ enum ReconstructCommand: Subcommand {
 
         let result: FeatureReconstructor.BuildResult
         do {
-            result = try FeatureReconstructor.buildJSON(envelopeData)
+            result = try FeatureReconstructor.buildJSON(envelopeData, inputBody: inputBody)
         } catch {
             throw ScriptError.message("FeatureReconstructor failed: \(error.localizedDescription)")
         }
