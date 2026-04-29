@@ -24,6 +24,9 @@ enum Registry {
         DrawingExportCommand.self,
         ReconstructCommand.self,
         ComposeSheetMetalCommand.self,
+        TransformCommand.self,
+        BooleanCommand.self,
+        PatternCommand.self,
     ]
 
     /// Verb names registered in `all`, in order, for the install Makefile.
