@@ -10,6 +10,11 @@ enum FeatureRecognizeCommand: Subcommand {
     struct Report: Codable {
         let pockets: [Pocket]
         let holes: [Hole]
+        // Unified, OCCTMCP-friendly view (OCCTSwiftScripts#18). Each entry has a
+        // `kind` discriminator and `topologyRefs` aligned with the
+        // query-topology verb's `face[N]` / `edge[N]` ID scheme. Coexists with
+        // the existing pockets/holes arrays so existing consumers keep working.
+        let features: [Feature]
 
         struct Pocket: Codable {
             let floorFaceIndex: Int
@@ -29,6 +34,14 @@ enum FeatureRecognizeCommand: Subcommand {
         struct Bounds: Codable {
             let min: [Double]
             let max: [Double]
+        }
+
+        struct Feature: Codable {
+            let id: String
+            let kind: String           // "pocket" | "hole"
+            let confidence: Double     // 1.0 — AAG is rule-based, no probabilistic score
+            let params: [String: Double]
+            let topologyRefs: [String]
         }
     }
 
@@ -54,7 +67,38 @@ enum FeatureRecognizeCommand: Subcommand {
             Report.Hole(faceIndex: h.faceIndex, radius: h.radius, depth: h.depth)
         }
 
-        try GraphIO.emitJSON(Report(pockets: pockets, holes: holes))
+        var features: [Report.Feature] = []
+        for (i, p) in pockets.enumerated() {
+            var refs = ["face[\(p.floorFaceIndex)]"]
+            refs.append(contentsOf: p.wallFaceIndices.map { "face[\($0)]" })
+            features.append(Report.Feature(
+                id: "feat[\(features.count)]",
+                kind: "pocket",
+                confidence: 1.0,
+                params: [
+                    "zLevel": p.zLevel,
+                    "depth": p.depth,
+                    "isOpen": p.isOpen ? 1.0 : 0.0,
+                    "pocketIndex": Double(i),
+                ],
+                topologyRefs: refs
+            ))
+        }
+        for (i, h) in holes.enumerated() {
+            features.append(Report.Feature(
+                id: "feat[\(features.count)]",
+                kind: "hole",
+                confidence: 1.0,
+                params: [
+                    "radius": h.radius,
+                    "depth": h.depth,
+                    "holeIndex": Double(i),
+                ],
+                topologyRefs: ["face[\(h.faceIndex)]"]
+            ))
+        }
+
+        try GraphIO.emitJSON(Report(pockets: pockets, holes: holes, features: features))
         return 0
     }
 }
