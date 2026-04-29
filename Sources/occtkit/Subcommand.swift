@@ -35,6 +35,7 @@ enum Registry {
         CheckThicknessCommand.self,
         AnalyzeClearanceCommand.self,
         HealCommand.self,
+        MeshCommand.self,
     ]
 
     /// Verb names registered in `all`, in order, for the install Makefile.
