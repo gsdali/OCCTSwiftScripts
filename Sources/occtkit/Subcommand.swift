@@ -32,6 +32,9 @@ enum Registry {
         MeasureDistanceCommand.self,
         LoadBrepCommand.self,
         ImportCommand.self,
+        CheckThicknessCommand.self,
+        AnalyzeClearanceCommand.self,
+        HealCommand.self,
     ]
 
     /// Verb names registered in `all`, in order, for the install Makefile.
