@@ -3,7 +3,7 @@ BINDIR  = $(PREFIX)/bin
 BIN     = occtkit
 BUILD   = .build/release/$(BIN)
 
-VERBS = run graph-validate graph-compact graph-dedup graph-query graph-ml feature-recognize dxf-export drawing-export reconstruct compose-sheet-metal transform boolean pattern metrics query-topology measure-distance load-brep import check-thickness analyze-clearance heal mesh render-preview inspect-assembly set-metadata
+VERBS = run graph-validate graph-compact graph-dedup graph-query graph-ml feature-recognize dxf-export drawing-export reconstruct compose-sheet-metal transform boolean pattern metrics query-topology measure-distance load-brep import check-thickness analyze-clearance heal mesh render-preview inspect-assembly set-metadata simplify-mesh
 
 .PHONY: build install uninstall clean help
 
