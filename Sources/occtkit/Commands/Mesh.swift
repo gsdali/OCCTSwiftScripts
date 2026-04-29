@@ -12,8 +12,15 @@
 //     (collinear or repeated vertices).
 //   - nonManifoldEdges: undirected edges shared by != 2 triangles.
 //
-// `simplify-mesh` (the second half of #22) is deferred — OCCTSwift v0.156
-// does not expose mesh decimation. Tracked upstream as OCCTSwift#92.
+// `simplify-mesh` (the second half of #22) is deferred — mesh decimation /
+// QEM was filed against OCCTSwift core as OCCTSwift#92 but closed as
+// out-of-scope; mesh-domain algorithms (decimation, smoothing, repair,
+// remeshing) now live in a sibling repo `OCCTSwiftMesh` that vendors
+// meshoptimizer (BSD-2-Clause). The v0.1.0 implementation is tracked at
+// gsdali/OCCTSwiftMesh#1 — once it ships, this verb's sibling
+// `simplify-mesh` adds OCCTSwiftMesh as a SPM dep and wraps
+// Mesh.simplified(_:) per the API spec preserved in
+// OCCTSwiftMesh's docs/INITIAL_IMPLEMENTATION.md.
 //
 // Two input modes:
 //   1. Flag form:
