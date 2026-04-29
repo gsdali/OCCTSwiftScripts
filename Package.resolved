@@ -1,5 +1,5 @@
 {
-  "originHash" : "b8abc8bd36fef4f3ab9ffb6eaaf86b1da36623abb1f33f12c427ba2ddf1ec9a3",
+  "originHash" : "1186f57ef76c1159337c99d680d277e6786eb40d5dfb2c045f0b701d1d44269a",
   "pins" : [
     {
       "identity" : "occtswift",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "356e2c58bbc789eec4cf353646f8a28cf4745200",
         "version" : "0.156.2"
+      }
+    },
+    {
+      "identity" : "occtswiftmesh",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/gsdali/OCCTSwiftMesh.git",
+      "state" : {
+        "revision" : "ceb6b91cec80a2988fd5ef08f908e379d4179ac3",
+        "version" : "0.1.0"
       }
     },
     {

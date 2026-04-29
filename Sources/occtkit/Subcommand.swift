@@ -39,6 +39,7 @@ enum Registry {
         RenderPreviewCommand.self,
         InspectAssemblyCommand.self,
         SetMetadataCommand.self,
+        SimplifyMeshCommand.self,
     ]
 
     /// Verb names registered in `all`, in order, for the install Makefile.
