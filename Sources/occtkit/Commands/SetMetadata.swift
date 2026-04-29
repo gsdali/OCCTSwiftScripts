@@ -88,13 +88,6 @@ enum SetMetadataCommand: Subcommand {
     static func run(args: [String]) throws -> Int32 {
         let req = try parseRequest(args: args)
         let document = try InspectAssemblyCommand.loadDocument(path: req.inputPath)
-        // Touch rootNodes once before any node(at:) lookup. Without this,
-        // OCCTSwift v0.156.x's Document.node(at:) returns nil for labelId 0
-        // (the document main label) on a freshly-loaded STEP doc — the XCAF
-        // shape tool isn't registered until rootNodes is accessed. Costs an
-        // unused property read; should go away once OCCTSwift's node(at:)
-        // does the eager registration itself.
-        _ = document.rootNodes.count
 
         let target: AssemblyNode = try {
             switch req.scope {
