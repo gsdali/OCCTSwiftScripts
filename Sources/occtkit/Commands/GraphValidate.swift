@@ -63,18 +63,4 @@ enum GraphValidateCommand: Subcommand {
     }
 }
 
-private extension ShapeType {
-    func toLowercaseString() -> String {
-        switch self {
-        case .compound: return "compound"
-        case .compSolid: return "compSolid"
-        case .solid: return "solid"
-        case .shell: return "shell"
-        case .face: return "face"
-        case .wire: return "wire"
-        case .edge: return "edge"
-        case .vertex: return "vertex"
-        case .unknown: return "unknown"
-        }
-    }
-}
+// `ShapeType.toLowercaseString()` is defined in LoadBrep.swift.

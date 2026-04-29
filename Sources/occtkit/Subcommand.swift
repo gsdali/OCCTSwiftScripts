@@ -30,6 +30,8 @@ enum Registry {
         MetricsCommand.self,
         QueryTopologyCommand.self,
         MeasureDistanceCommand.self,
+        LoadBrepCommand.self,
+        ImportCommand.self,
     ]
 
     /// Verb names registered in `all`, in order, for the install Makefile.
