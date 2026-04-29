@@ -21,7 +21,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/gsdali/OCCTSwift.git", from: "0.153.0"),
+        .package(url: "https://github.com/gsdali/OCCTSwift.git", from: "0.156.1"),
         // OCCTSwiftViewport: revision-pinned because the OffscreenRenderer
         // (closing OCCTSwiftViewport#18) hasn't been cut as a release yet.
         // Bump to `from: "<tag>"` when a release containing OffscreenRenderer
