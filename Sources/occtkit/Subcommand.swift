@@ -27,6 +27,9 @@ enum Registry {
         TransformCommand.self,
         BooleanCommand.self,
         PatternCommand.self,
+        MetricsCommand.self,
+        QueryTopologyCommand.self,
+        MeasureDistanceCommand.self,
     ]
 
     /// Verb names registered in `all`, in order, for the install Makefile.
