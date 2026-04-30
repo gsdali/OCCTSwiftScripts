@@ -29,10 +29,8 @@
 //
 // Stdout: { "outputPath": "...", "width": N, "height": N, "mimeType": "image/png" }
 //
-// Note on dep pinning: OCCTSwiftViewport is currently revision-pinned to a
-// commit on `main` (see Package.swift) because the OffscreenRenderer hadn't
-// been cut as a release tag yet. Bump to a `from: "<tag>"` pin once a
-// Viewport release containing OffscreenRenderer ships.
+// OCCTSwiftViewport pin: `from: "0.50.0"` (the first release containing
+// OffscreenRenderer, cut after OCCTSwiftViewport#20).
 
 import Foundation
 import simd

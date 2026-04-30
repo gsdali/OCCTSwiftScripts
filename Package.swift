@@ -22,15 +22,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/gsdali/OCCTSwift.git", from: "0.156.3"),
-        // OCCTSwiftViewport: revision-pinned because the OffscreenRenderer
-        // (closing OCCTSwiftViewport#18) hasn't been cut as a release yet.
-        // Bump to `from: "<tag>"` when a release containing OffscreenRenderer
-        // ships (latest tag at time of writing was v0.49.0 from 2026-03-16,
-        // pre-OffscreenRenderer).
-        .package(
-            url: "https://github.com/gsdali/OCCTSwiftViewport.git",
-            revision: "42ecce7c9671dab67cb3a47767a6ce98408ff7ff"
-        ),
+        .package(url: "https://github.com/gsdali/OCCTSwiftViewport.git", from: "0.50.0"),
         // OCCTSwiftMesh: mesh-domain algorithms (decimation today; smoothing /
         // repair / remeshing in future releases). Vendors meshoptimizer
         // (BSD-2-Clause / MIT-equivalent) inside an LGPL-2.1 wrapper. Powers
