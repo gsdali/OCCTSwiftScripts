@@ -21,7 +21,15 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/gsdali/OCCTSwift.git", from: "0.156.3"),
+        // OCCTSwift v0.157+ pins to OCCT 8.0.0 beta1 (xcframework rebuilt against
+        // V8_0_0_beta1; internal BRepGraph bridge migrations to EditorView /
+        // NCollection_DynamicArray; Swift public API unchanged). Floor is
+        // v0.165.0 — earlier v0.157-v0.164 had a broken Package.swift binary
+        // target URL still pointing at the rc-era v0.131.0 xcframework
+        // (OCCTSwift#97), so remote SPM consumers couldn't compile against
+        // those tags. Soak window per OCCTSwiftScripts#36; bump to from: "1.0.0"
+        // when OCCT 8.0.0 GA tags on 2026-05-07.
+        .package(url: "https://github.com/gsdali/OCCTSwift.git", from: "0.165.0"),
         .package(url: "https://github.com/gsdali/OCCTSwiftViewport.git", from: "0.50.0"),
         // OCCTSwiftMesh: mesh-domain algorithms (decimation today; smoothing /
         // repair / remeshing in future releases). Vendors meshoptimizer
