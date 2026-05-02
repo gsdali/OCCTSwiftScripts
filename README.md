@@ -45,7 +45,23 @@ printf '{"args":["a.brep"]}\n{"args":["b.brep"]}\n' | occtkit graph-validate --s
 make uninstall
 ```
 
-Subcommands: `run`, `graph-validate`, `graph-compact`, `graph-dedup`, `graph-query`, `graph-ml`, `feature-recognize`, `dxf-export`, `drawing-export`, `reconstruct`. `occtkit --help` lists them with one-line summaries.
+Subcommands (26 verbs as of v0.8.1):
+
+| Domain | Verbs |
+|---|---|
+| Script host | `run` |
+| Topology graph | `graph-validate`, `graph-compact`, `graph-dedup`, `graph-query`, `graph-ml` |
+| Drawings & export | `dxf-export`, `drawing-export` |
+| Composition | `compose-sheet-metal`, `reconstruct` |
+| Construction | `transform`, `boolean`, `pattern` |
+| Introspection | `metrics`, `query-topology`, `measure-distance`, `feature-recognize` |
+| I/O | `load-brep`, `import` |
+| Engineering analysis | `check-thickness`, `analyze-clearance`, `heal` |
+| Mesh | `mesh`, `simplify-mesh` |
+| Render | `render-preview` |
+| XCAF | `inspect-assembly`, `set-metadata` |
+
+`occtkit --help` lists them with one-line summaries. Each verb accepts both flag-form and JSON-form (stdin or file path) input, plus a generic `--serve` mode that reads JSONL `{"args":[...]}` requests and emits JSONL envelopes — used by OCCTMCP and any other JSON-driven consumer.
 
 > **Note**: 2D constraint solving (previously the `solve-sketch` verb) has been removed from occtkit to keep this project free of closed-source dependencies. Downstream consumers that need constraint-based sketch solving should wire up their own solver (e.g., via a separate CLI) and call it outside occtkit.
 
@@ -201,8 +217,25 @@ try ctx.emit(description: "Parametric L-bracket")
 - **output.step**: combined geometry for external tools (FreeCAD, ezdxf, STEPUtils, etc.)
 - **manifest.json**: body metadata (IDs, colors, names)
 
+## Use as an SPM library
+
+`ScriptHarness` and `DrawingComposer` are exposed as library products for in-process consumers:
+
+```swift
+.package(url: "https://github.com/gsdali/OCCTSwiftScripts.git", from: "0.8.1"),
+```
+
+```swift
+.product(name: "ScriptHarness", package: "OCCTSwiftScripts"),
+.product(name: "DrawingComposer", package: "OCCTSwiftScripts"),
+```
+
+The `occtkit` executable is a separate target — install via the `Makefile` above when you want the command-line surface.
+
 ## Requirements
 
 - macOS 15+
 - Swift 6.0+
-- OCCTSwift (local path dependency at `../OCCTSwift`)
+- [OCCTSwift](https://github.com/gsdali/OCCTSwift) `>= 0.165.0` (resolved transitively via SPM; xcframework rebuilt against OCCT 8.0.0 beta1, will move to OCCT 8.0.0 GA in v0.9.0)
+- [OCCTSwiftViewport](https://github.com/gsdali/OCCTSwiftViewport) `>= 0.50.0` (transitive; powers `render-preview`)
+- [OCCTSwiftMesh](https://github.com/gsdali/OCCTSwiftMesh) `>= 0.1.0` (transitive; powers `simplify-mesh`)
