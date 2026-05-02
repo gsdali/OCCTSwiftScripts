@@ -1,0 +1,15 @@
+# Swift Package Index build / documentation config.
+# https://swiftpackageindex.com/SwiftPackageIndex/SwiftPackageIndex-Server/main/documentation/spidocumentation/spi-yml
+version: 1
+builder:
+  configs:
+    # Documented Swift version + platform pair for the build matrix.
+    # OCCTSwift's xcframework is arm64 macOS 12+ / iOS 15+; this package
+    # currently targets macOS 15+ (per Package.swift) because the dev
+    # machine pinned macOS 15 — iOS support is an open question for a
+    # future minor.
+    - documentation_targets:
+        - ScriptHarness
+        - DrawingComposer
+      swift_version: "6.0"
+      platform: macos-spm
