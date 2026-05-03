@@ -1,5 +1,5 @@
 {
-  "originHash" : "8496a96412d003841882767f04014a5a8b11b84c4d34799d2185203840e9daf6",
+  "originHash" : "d34fe67e5e65610d7559dc20c9d28b7ab655a1bca5c384710162913f9ecf989f",
   "pins" : [
     {
       "identity" : "occtswift",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "3cca0730cf3fe3df722a9542ecc3e00d90fe5076",
         "version" : "0.169.0"
+      }
+    },
+    {
+      "identity" : "occtswiftais",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/gsdali/OCCTSwiftAIS.git",
+      "state" : {
+        "revision" : "b906f7487246dd59a6243b28efbbd47704e9908d",
+        "version" : "0.6.0"
       }
     },
     {

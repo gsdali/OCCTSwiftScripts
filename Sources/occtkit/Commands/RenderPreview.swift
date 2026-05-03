@@ -37,6 +37,7 @@ import simd
 import OCCTSwift
 import OCCTSwiftViewport
 import OCCTSwiftTools
+import OCCTSwiftAIS
 import ScriptHarness
 
 enum RenderPreviewCommand: Subcommand {
@@ -50,6 +51,10 @@ enum RenderPreviewCommand: Subcommand {
               [--width N] [--height N]
               [--display-mode shaded|wireframe|shaded-with-edges|flat|xray|rendered]
               [--background light|dark|transparent|#hex]
+              [--show-axes]
+              [--show-workplane xy|yz|xz]
+              [--highlight face[N],edge[M],vertex[K]]
+              [--highlight-color #hex]
           render-preview <request.json>
           render-preview                    (JSON request from stdin)
         """
@@ -60,8 +65,13 @@ enum RenderPreviewCommand: Subcommand {
         var camera: CameraSpec
         var width: Int
         var height: Int
-        var displayMode: DisplayMode
+        var displayMode: OCCTSwiftViewport.DisplayMode
         var background: SIMD4<Float>
+        // Phase 2 AIS overlays (OCCTSwiftScripts: render-preview AIS extensions)
+        var showAxes: Bool
+        var workPlane: WorkPlanePreset?
+        var highlights: [TopologyRef]
+        var highlightColor: SIMD4<Float>
     }
 
     private enum CameraSpec {
@@ -69,6 +79,14 @@ enum RenderPreviewCommand: Subcommand {
         case explicit(position: SIMD3<Float>, target: SIMD3<Float>, up: SIMD3<Float>)
 
         enum Preset: String { case iso, front, back, top, bottom, left, right }
+    }
+
+    private enum WorkPlanePreset: String { case xy, yz, xz }
+
+    private enum TopologyRef {
+        case face(Int)
+        case edge(Int)
+        case vertex(Int)
     }
 
     private struct JSONRequest: Decodable {
@@ -82,6 +100,11 @@ enum RenderPreviewCommand: Subcommand {
         let height: Int?
         let displayMode: String?
         let background: String?
+        // Phase 2 AIS overlays
+        let showAxes: Bool?
+        let showWorkplane: String?
+        let highlight: [String]?
+        let highlightColor: String?
     }
 
     struct Response: Encodable {
@@ -94,12 +117,18 @@ enum RenderPreviewCommand: Subcommand {
     static func run(args: [String]) throws -> Int32 {
         let req = try parseRequest(args: args)
 
-        // Load + convert.
+        // Load + convert. Keep the source Shape alongside the ViewportBody so
+        // --highlight can pull face[N]/edge[M]/vertex[K] sub-shapes back out
+        // of the *first* input (the natural target for "highlight a feature
+        // in this part" workflows; multi-BREP scenes should render the
+        // single-target BREP solo).
         var bodies: [ViewportBody] = []
+        var inputShapes: [Shape] = []
         var unionMin = SIMD3<Float>(repeating: .infinity)
         var unionMax = SIMD3<Float>(repeating: -.infinity)
         for (i, path) in req.inputs.enumerated() {
             let shape = try GraphIO.loadBREP(at: path)
+            inputShapes.append(shape)
             let id = (path as NSString).deletingPathExtension.split(separator: "/").last.map(String.init) ?? "body_\(i)"
             let (body, _) = OCCTSwiftTools.CADFileLoader.shapeToBodyAndMetadata(
                 shape, id: id, color: SIMD4(0.7, 0.7, 0.75, 1.0)  // steel
@@ -115,6 +144,44 @@ enum RenderPreviewCommand: Subcommand {
 
         let center = (unionMin + unionMax) * 0.5
         let diagonal = simd_length(unionMax - unionMin)
+
+        // --- AIS overlays (OCCTSwiftAIS scene objects + sub-shape highlights) ---
+
+        if req.showAxes {
+            // Trihedron axis length sized to roughly half the bbox diagonal so
+            // it reads at any scene scale; falls back to 1.0 for tiny inputs.
+            let length = max(diagonal * 0.5, 1.0)
+            let trihedron = Trihedron(at: center, axisLength: length)
+            bodies.append(contentsOf: trihedron.makeBodies())
+        }
+
+        if let preset = req.workPlane {
+            let normal: SIMD3<Float>
+            switch preset {
+            case .xy: normal = SIMD3(0, 0, 1)
+            case .yz: normal = SIMD3(1, 0, 0)
+            case .xz: normal = SIMD3(0, 1, 0)
+            }
+            let size = max(diagonal * 1.2, 10.0)
+            let workplane = WorkPlane(origin: center, normal: normal, size: size)
+            bodies.append(contentsOf: workplane.makeBodies())
+        }
+
+        if !req.highlights.isEmpty, let source = inputShapes.first {
+            for ref in req.highlights {
+                let (kind, idx, label) = subShapeKey(ref)
+                guard let sub = source.subShape(type: kind, index: idx) else {
+                    FileHandle.standardError.write(Data(
+                        "warn: --highlight \(label) — sub-shape not found on source\n".utf8))
+                    continue
+                }
+                let (highlightBody, _) = OCCTSwiftTools.CADFileLoader.shapeToBodyAndMetadata(
+                    sub, id: "highlight.\(label)", color: req.highlightColor
+                )
+                if let highlightBody { bodies.append(highlightBody) }
+            }
+        }
+
         let cameraState = makeCameraState(spec: req.camera, center: center, diagonal: diagonal)
 
         // OffscreenRenderer is @MainActor-isolated. main.swift's dispatch() is
@@ -207,7 +274,7 @@ enum RenderPreviewCommand: Subcommand {
 
     // MARK: - Display mode
 
-    private static func parseDisplayMode(_ s: String) throws -> DisplayMode {
+    private static func parseDisplayMode(_ s: String) throws -> OCCTSwiftViewport.DisplayMode {
         switch s {
         case "shaded": return .shaded
         case "wireframe": return .wireframe
@@ -236,8 +303,13 @@ enum RenderPreviewCommand: Subcommand {
         var cameraUp: SIMD3<Float> = SIMD3(0, 0, 1)
         var width = 800
         var height = 600
-        var displayMode: DisplayMode = .shaded
+        var displayMode: OCCTSwiftViewport.DisplayMode = .shaded
         var background = SIMD4<Float>(0.92, 0.94, 0.97, 1.0)
+
+        var showAxes = false
+        var workPlane: WorkPlanePreset?
+        var highlights: [TopologyRef] = []
+        var highlightColor = SIMD4<Float>(1.0, 0.65, 0.0, 1.0)  // AIS PresentationStyle.highlighted orange
 
         var i = 0
         while i < args.count {
@@ -272,6 +344,24 @@ enum RenderPreviewCommand: Subcommand {
             case "--background":
                 i += 1
                 background = parseBackground(try v(args, i, "--background"))
+            case "--show-axes":
+                showAxes = true
+            case "--show-workplane":
+                i += 1
+                let s = try v(args, i, "--show-workplane")
+                guard let p = WorkPlanePreset(rawValue: s) else {
+                    throw ScriptError.message("--show-workplane must be xy|yz|xz (got \(s))")
+                }
+                workPlane = p
+            case "--highlight":
+                i += 1
+                let s = try v(args, i, "--highlight")
+                highlights = try s.split(separator: ",").map {
+                    try parseTopologyRef(String($0).trimmingCharacters(in: .whitespaces))
+                }
+            case "--highlight-color":
+                i += 1
+                highlightColor = parseBackground(try v(args, i, "--highlight-color"))
             default:
                 if a.hasPrefix("-") { throw ScriptError.message("Unknown flag: \(a)") }
                 inputs.append(a)
@@ -294,8 +384,45 @@ enum RenderPreviewCommand: Subcommand {
         return Request(
             inputs: inputs, outputPath: outputPath, camera: camera,
             width: width, height: height,
-            displayMode: displayMode, background: background
+            displayMode: displayMode, background: background,
+            showAxes: showAxes, workPlane: workPlane,
+            highlights: highlights, highlightColor: highlightColor
         )
+    }
+
+    // MARK: - Topology ref parsing
+
+    /// Parse a `face[N]` / `edge[N]` / `vertex[N]` token into a `TopologyRef`.
+    private static func parseTopologyRef(_ token: String) throws -> TopologyRef {
+        // Split on the bracket; expect exactly `<kind>[<int>]`.
+        guard let openBracket = token.firstIndex(of: "["),
+              token.hasSuffix("]") else {
+            throw ScriptError.message(
+                "--highlight token '\(token)' must look like 'face[N]', 'edge[N]', or 'vertex[N]'")
+        }
+        let kindStr = String(token[token.startIndex..<openBracket]).lowercased()
+        let idxStr = String(token[token.index(after: openBracket)..<token.index(before: token.endIndex)])
+        guard let idx = Int(idxStr) else {
+            throw ScriptError.message("--highlight: index in '\(token)' must be an integer")
+        }
+        switch kindStr {
+        case "face":   return .face(idx)
+        case "edge":   return .edge(idx)
+        case "vertex": return .vertex(idx)
+        default:
+            throw ScriptError.message(
+                "--highlight: kind in '\(token)' must be face|edge|vertex (got '\(kindStr)')")
+        }
+    }
+
+    /// Map a `TopologyRef` to OCCTSwift's `(ShapeType, Int)` lookup pair plus a
+    /// stable label for warnings / body-id construction.
+    private static func subShapeKey(_ ref: TopologyRef) -> (ShapeType, Int, String) {
+        switch ref {
+        case .face(let i):   return (.face,   i, "face[\(i)]")
+        case .edge(let i):   return (.edge,   i, "edge[\(i)]")
+        case .vertex(let i): return (.vertex, i, "vertex[\(i)]")
+        }
     }
 
     private static func v(_ args: [String], _ i: Int, _ flag: String) throws -> String {
@@ -336,15 +463,23 @@ enum RenderPreviewCommand: Subcommand {
         } else if let preset = raw.camera, let p = CameraSpec.Preset(rawValue: preset) {
             camera = .preset(p)
         }
-        let displayMode: DisplayMode = try {
+        let displayMode: OCCTSwiftViewport.DisplayMode = try {
             guard let s = raw.displayMode else { return .shaded }
             return try parseDisplayMode(s)
         }()
         let background = parseBackground(raw.background ?? "light")
+        let workPlane: WorkPlanePreset? = {
+            guard let s = raw.showWorkplane else { return nil }
+            return WorkPlanePreset(rawValue: s)
+        }()
+        let highlights: [TopologyRef] = try (raw.highlight ?? []).map(parseTopologyRef)
+        let highlightColor = parseBackground(raw.highlightColor ?? "#ffa500")
         return Request(
             inputs: raw.inputs, outputPath: raw.outputPath, camera: camera,
             width: raw.width ?? 800, height: raw.height ?? 600,
-            displayMode: displayMode, background: background
+            displayMode: displayMode, background: background,
+            showAxes: raw.showAxes ?? false, workPlane: workPlane,
+            highlights: highlights, highlightColor: highlightColor
         )
     }
 }

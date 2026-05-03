@@ -36,6 +36,15 @@ let package = Package(
         // direct deps below.
         .package(url: "https://github.com/gsdali/OCCTSwiftViewport.git", from: "0.55.0"),
         .package(url: "https://github.com/gsdali/OCCTSwiftTools.git", from: "0.4.1"),
+        // OCCTSwiftAIS: high-level interactive services. Used here for the
+        // headless-friendly subset only — Trihedron / WorkPlane / Axis /
+        // PointCloud scene objects (each emits ViewportBody arrays via
+        // makeBodies()) and the SubShape ↔ ViewportBody plumbing for
+        // highlight overlays. Selection / Manipulator / SwiftUI surfaces
+        // aren't relevant to a CLI; Dimension overlays render via a
+        // SwiftUI Canvas inside MetalViewportView and so don't reach
+        // OffscreenRenderer (filed upstream — see CLAUDE.md).
+        .package(url: "https://github.com/gsdali/OCCTSwiftAIS.git", from: "0.3.0"),
         // OCCTSwiftMesh: mesh-domain algorithms (decimation today; smoothing /
         // repair / remeshing in future releases). Vendors meshoptimizer
         // (BSD-2-Clause / MIT-equivalent) inside an LGPL-2.1 wrapper. Powers
@@ -140,6 +149,7 @@ let package = Package(
                 .product(name: "OCCTSwift", package: "OCCTSwift"),
                 .product(name: "OCCTSwiftViewport", package: "OCCTSwiftViewport"),
                 .product(name: "OCCTSwiftTools", package: "OCCTSwiftTools"),
+                .product(name: "OCCTSwiftAIS", package: "OCCTSwiftAIS"),
                 .product(name: "OCCTSwiftMesh", package: "OCCTSwiftMesh"),
             ],
             path: "Sources/occtkit",
