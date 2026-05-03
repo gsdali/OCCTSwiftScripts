@@ -237,5 +237,6 @@ The `occtkit` executable is a separate target — install via the `Makefile` abo
 - macOS 15+
 - Swift 6.0+
 - [OCCTSwift](https://github.com/gsdali/OCCTSwift) `>= 0.165.0` (resolved transitively via SPM; xcframework rebuilt against OCCT 8.0.0 beta1, will move to OCCT 8.0.0 GA in v0.9.0)
-- [OCCTSwiftViewport](https://github.com/gsdali/OCCTSwiftViewport) `>= 0.50.0` (transitive; powers `render-preview`)
+- [OCCTSwiftViewport](https://github.com/gsdali/OCCTSwiftViewport) `>= 0.55.0` (transitive; powers `render-preview`)
+- [OCCTSwiftTools](https://github.com/gsdali/OCCTSwiftTools) `>= 0.4.1` (transitive; bridge layer used by `render-preview` for Shape→ViewportBody conversion — split out of OCCTSwiftViewport at v0.55.0)
 - [OCCTSwiftMesh](https://github.com/gsdali/OCCTSwiftMesh) `>= 0.1.0` (transitive; powers `simplify-mesh`)

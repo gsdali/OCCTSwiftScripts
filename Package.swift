@@ -30,7 +30,12 @@ let package = Package(
         // those tags. Soak window per OCCTSwiftScripts#36; bump to from: "1.0.0"
         // when OCCT 8.0.0 GA tags on 2026-05-07.
         .package(url: "https://github.com/gsdali/OCCTSwift.git", from: "0.165.0"),
-        .package(url: "https://github.com/gsdali/OCCTSwiftViewport.git", from: "0.50.0"),
+        // OCCTSwiftViewport v0.55.0+ no longer ships OCCTSwiftTools as a
+        // sub-product — that bridge layer was split into its own repo to
+        // share with OCCTSwiftAIS (a sibling toolkit). We declare both as
+        // direct deps below.
+        .package(url: "https://github.com/gsdali/OCCTSwiftViewport.git", from: "0.55.0"),
+        .package(url: "https://github.com/gsdali/OCCTSwiftTools.git", from: "0.4.1"),
         // OCCTSwiftMesh: mesh-domain algorithms (decimation today; smoothing /
         // repair / remeshing in future releases). Vendors meshoptimizer
         // (BSD-2-Clause / MIT-equivalent) inside an LGPL-2.1 wrapper. Powers
@@ -134,7 +139,7 @@ let package = Package(
                 "DrawingComposer",
                 .product(name: "OCCTSwift", package: "OCCTSwift"),
                 .product(name: "OCCTSwiftViewport", package: "OCCTSwiftViewport"),
-                .product(name: "OCCTSwiftTools", package: "OCCTSwiftViewport"),
+                .product(name: "OCCTSwiftTools", package: "OCCTSwiftTools"),
                 .product(name: "OCCTSwiftMesh", package: "OCCTSwiftMesh"),
             ],
             path: "Sources/occtkit",
