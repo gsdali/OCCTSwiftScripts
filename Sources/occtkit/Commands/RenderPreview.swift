@@ -51,7 +51,7 @@ enum RenderPreviewCommand: Subcommand {
               [--width N] [--height N]
               [--display-mode shaded|wireframe|shaded-with-edges|flat|xray|rendered]
               [--background light|dark|transparent|#hex]
-              [--show-axes]
+              [--show-axes] [--axes-position origin|center|outside|x,y,z]
               [--show-workplane xy|yz|xz]
               [--highlight face[N],edge[M],vertex[K]]
               [--highlight-color #hex]
@@ -69,6 +69,7 @@ enum RenderPreviewCommand: Subcommand {
         var background: SIMD4<Float>
         // Phase 2 AIS overlays (OCCTSwiftScripts: render-preview AIS extensions)
         var showAxes: Bool
+        var axesPosition: AxesPosition
         var workPlane: WorkPlanePreset?
         var highlights: [TopologyRef]
         var highlightColor: SIMD4<Float>
@@ -82,6 +83,23 @@ enum RenderPreviewCommand: Subcommand {
     }
 
     private enum WorkPlanePreset: String { case xy, yz, xz }
+
+    /// Where to anchor the AIS Trihedron when --show-axes is set.
+    private enum AxesPosition {
+        /// World origin (0, 0, 0). Useful when the model is positioned away
+        /// from origin and you want a fixed world reference.
+        case origin
+        /// Union bbox centre. Centred on the model — but for parts whose
+        /// bbox spans the origin, two of the three arrows hide inside the
+        /// geometry. Pre-#axes-position-flag default.
+        case center
+        /// Just outside the bbox-min corner (offset by 20% of the diagonal
+        /// in the -X/-Y/-Z direction). All three arrows have free space to
+        /// extend, even for parts spanning the origin. **Default.**
+        case outside
+        /// Explicit world coordinates from `--axes-position x,y,z`.
+        case explicit(SIMD3<Float>)
+    }
 
     private enum TopologyRef {
         case face(Int)
@@ -102,6 +120,7 @@ enum RenderPreviewCommand: Subcommand {
         let background: String?
         // Phase 2 AIS overlays
         let showAxes: Bool?
+        let axesPosition: String?           // "origin" | "center" | "outside" | "x,y,z"
         let showWorkplane: String?
         let highlight: [String]?
         let highlightColor: String?
@@ -151,7 +170,11 @@ enum RenderPreviewCommand: Subcommand {
             // Trihedron axis length sized to roughly half the bbox diagonal so
             // it reads at any scene scale; falls back to 1.0 for tiny inputs.
             let length = max(diagonal * 0.5, 1.0)
-            let trihedron = Trihedron(at: center, axisLength: length)
+            let anchor = resolveAxesAnchor(
+                req.axesPosition, center: center,
+                bboxMin: unionMin, diagonal: diagonal
+            )
+            let trihedron = Trihedron(at: anchor, axisLength: length)
             bodies.append(contentsOf: trihedron.makeBodies())
         }
 
@@ -307,6 +330,7 @@ enum RenderPreviewCommand: Subcommand {
         var background = SIMD4<Float>(0.92, 0.94, 0.97, 1.0)
 
         var showAxes = false
+        var axesPosition: AxesPosition = .outside  // default keeps all 3 arrows visible
         var workPlane: WorkPlanePreset?
         var highlights: [TopologyRef] = []
         var highlightColor = SIMD4<Float>(1.0, 0.65, 0.0, 1.0)  // AIS PresentationStyle.highlighted orange
@@ -346,6 +370,9 @@ enum RenderPreviewCommand: Subcommand {
                 background = parseBackground(try v(args, i, "--background"))
             case "--show-axes":
                 showAxes = true
+            case "--axes-position":
+                i += 1
+                axesPosition = try parseAxesPosition(try v(args, i, "--axes-position"))
             case "--show-workplane":
                 i += 1
                 let s = try v(args, i, "--show-workplane")
@@ -385,9 +412,51 @@ enum RenderPreviewCommand: Subcommand {
             inputs: inputs, outputPath: outputPath, camera: camera,
             width: width, height: height,
             displayMode: displayMode, background: background,
-            showAxes: showAxes, workPlane: workPlane,
+            showAxes: showAxes, axesPosition: axesPosition,
+            workPlane: workPlane,
             highlights: highlights, highlightColor: highlightColor
         )
+    }
+
+    // MARK: - AxesPosition
+
+    /// Resolve an `AxesPosition` to a concrete world point. The default
+    /// (`.outside`) anchors the trihedron 20% of the bbox diagonal beyond
+    /// the bbox-min corner, so all three arrows extend INTO the part region
+    /// and stay visible regardless of where the part sits in world space.
+    private static func resolveAxesAnchor(
+        _ position: AxesPosition,
+        center: SIMD3<Float>,
+        bboxMin: SIMD3<Float>,
+        diagonal: Float
+    ) -> SIMD3<Float> {
+        switch position {
+        case .origin:
+            return SIMD3(0, 0, 0)
+        case .center:
+            return center
+        case .outside:
+            let offset = max(diagonal * 0.2, 1.0)
+            return bboxMin - SIMD3(offset, offset, offset)
+        case .explicit(let p):
+            return p
+        }
+    }
+
+    private static func parseAxesPosition(_ s: String) throws -> AxesPosition {
+        switch s {
+        case "origin":  return .origin
+        case "center":  return .center
+        case "outside": return .outside
+        default:
+            // Try x,y,z
+            let comps = s.split(separator: ",").compactMap { Float($0) }
+            guard comps.count == 3 else {
+                throw ScriptError.message(
+                    "--axes-position must be origin|center|outside or x,y,z (got '\(s)')")
+            }
+            return .explicit(SIMD3(comps[0], comps[1], comps[2]))
+        }
     }
 
     // MARK: - Topology ref parsing
@@ -474,11 +543,17 @@ enum RenderPreviewCommand: Subcommand {
         }()
         let highlights: [TopologyRef] = try (raw.highlight ?? []).map(parseTopologyRef)
         let highlightColor = parseBackground(raw.highlightColor ?? "#ffa500")
+        let axesPosition: AxesPosition = try {
+            guard let s = raw.axesPosition else { return .outside }
+            return try parseAxesPosition(s)
+        }()
         return Request(
             inputs: raw.inputs, outputPath: raw.outputPath, camera: camera,
             width: raw.width ?? 800, height: raw.height ?? 600,
             displayMode: displayMode, background: background,
-            showAxes: raw.showAxes ?? false, workPlane: workPlane,
+            showAxes: raw.showAxes ?? false,
+            axesPosition: axesPosition,
+            workPlane: workPlane,
             highlights: highlights, highlightColor: highlightColor
         )
     }
