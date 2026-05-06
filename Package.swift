@@ -35,7 +35,26 @@ let package = Package(
         // share with OCCTSwiftAIS (a sibling toolkit). We declare both as
         // direct deps below.
         .package(url: "https://github.com/gsdali/OCCTSwiftViewport.git", from: "0.55.0"),
-        .package(url: "https://github.com/gsdali/OCCTSwiftTools.git", from: "0.4.1"),
+        // OCCTSwiftTools v0.6.0 split file-I/O off into a sibling repo
+        // (OCCTSwiftIO) so headless consumers don't drag in Viewport just to
+        // load a STEP file. We only use Tools for the bridge-layer
+        // CADFileLoader.shapeToBodyAndMetadata in RenderPreview, which
+        // legitimately needs Viewport, so the Tools dep stays. We don't
+        // separately depend on OCCTSwiftIO because:
+        //   1. ScriptHarness / DrawingComposer libraries already don't pull
+        //      Viewport (target deps explicit; only `occtkit` does, via
+        //      RenderPreview), so the "drop Viewport from non-render
+        //      targets" story is already realized for library consumers.
+        //   2. OCCTSwiftIO's ScriptManifest is missing the `graphs` field
+        //      our local Sources/ScriptHarness/Manifest.swift carries — the
+        //      topology-graph descriptors that ScriptContext.addGraph() and
+        //      addGraphsForAllShapes() emit. Swapping would silently lose
+        //      that metadata for downstream OCCTSwiftViewport ScriptWatcher
+        //      consumers.
+        // If a future verb wants progress-aware STEP loading via
+        // OCCTSwiftIO's ShapeLoader.load(from:format:progress:), add the dep
+        // then.
+        .package(url: "https://github.com/gsdali/OCCTSwiftTools.git", from: "0.6.0"),
         // OCCTSwiftAIS: high-level interactive services. Used here for the
         // headless-friendly subset only — Trihedron / WorkPlane / Axis /
         // PointCloud scene objects (each emits ViewportBody arrays via
